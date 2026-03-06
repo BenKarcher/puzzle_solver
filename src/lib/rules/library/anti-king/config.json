@@ -1,0 +1,8 @@
+{
+	"id": "anti-king",
+	"name": "Anti-King",
+	"description": "No repeated numbers a king's move apart (all 8 directions)",
+	"categories": ["sudoku", "uniqueness"],
+	"requiredSpaces": ["numbers"],
+	"scope": "global"
+}

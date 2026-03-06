@@ -1,0 +1,17 @@
+{
+	"id": "odd",
+	"name": "Odd",
+	"description": "The given cell(s) must contain odd numbers",
+	"categories": ["sudoku", "parity"],
+	"requiredSpaces": ["numbers"],
+	"scope": "local",
+	"groups": {
+		"min": 1,
+		"max": 1,
+		"constraints": {
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": false
+		}
+	}
+}

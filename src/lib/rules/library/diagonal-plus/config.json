@@ -1,0 +1,8 @@
+{
+	"id": "diagonal-plus",
+	"name": "Diagonal +",
+	"description": "No repeated numbers on the / diagonal (bottom-left to top-right)",
+	"categories": ["sudoku", "uniqueness"],
+	"requiredSpaces": ["numbers"],
+	"scope": "global"
+}

@@ -1,0 +1,8 @@
+{
+	"id": "disjoint-groups",
+	"name": "Disjoint Groups",
+	"description": "No repeated numbers in the same position across different boxes. Cells at the same position within each region must all contain different numbers.",
+	"categories": ["sudoku", "uniqueness", "region"],
+	"requiredSpaces": ["numbers"],
+	"scope": "global"
+}

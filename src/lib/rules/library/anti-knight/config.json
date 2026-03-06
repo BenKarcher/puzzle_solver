@@ -1,0 +1,8 @@
+{
+	"id": "anti-knight",
+	"name": "Anti-Knight",
+	"description": "No repeated numbers a knight's move apart",
+	"categories": ["sudoku", "uniqueness"],
+	"requiredSpaces": ["numbers"],
+	"scope": "global"
+}
