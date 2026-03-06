@@ -1,0 +1,8 @@
+{
+	"id": "latin-cols",
+	"name": "Latin Columns",
+	"description": "Each column contains all different numbers",
+	"categories": ["latin-square", "sudoku", "uniqueness"],
+	"requiredSpaces": ["numbers"],
+	"scope": "global"
+}

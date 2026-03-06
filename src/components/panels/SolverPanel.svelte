@@ -1,0 +1,314 @@
+<script lang="ts">
+	import { puzzleStore } from '$lib/state/puzzle.svelte';
+	import { solverStore } from '$lib/solver/solver.svelte';
+	import { getAllLoadedRules } from '$lib/rules/registry';
+
+	const isBusy = $derived(solverStore.status === 'compiling' || solverStore.status === 'solving');
+
+	function handleSolve() {
+		const rules = getAllLoadedRules();
+		const snapshot = $state.snapshot(puzzleStore.puzzle);
+		solverStore.solvePuzzle(snapshot, rules);
+	}
+
+	function handleSolveAll() {
+		const rules = getAllLoadedRules();
+		const snapshot = $state.snapshot(puzzleStore.puzzle);
+		solverStore.solveAllPuzzle(snapshot, rules);
+	}
+
+	function handleCandidates() {
+		const rules = getAllLoadedRules();
+		const snapshot = $state.snapshot(puzzleStore.puzzle);
+		solverStore.findCandidates(snapshot, rules);
+	}
+
+	function handleClearEntries() {
+		puzzleStore.clearSolveEntries();
+		solverStore.clear();
+	}
+</script>
+
+<div class="panel">
+	<details class="solver-section" open>
+		<summary class="solver-header"><h3>Solver</h3></summary>
+
+	<div class="actions">
+		<button class="btn" onclick={handleSolve} disabled={isBusy}>
+			{isBusy ? 'Solving...' : 'Solve'}
+		</button>
+		<button class="btn" onclick={handleSolveAll} disabled={isBusy}>
+			Find All Solutions
+		</button>
+		<button class="btn" onclick={handleCandidates} disabled={isBusy}>
+			True Candidates
+		</button>
+		<button class="btn cancel-btn" onclick={() => solverStore.cancel()} disabled={!isBusy}>
+			Cancel
+		</button>
+	</div>
+
+	<div class="max-solutions">
+		<label>
+			Max stored:
+			<input
+				type="number"
+				min="1"
+				bind:value={solverStore.maxStoredSolutions}
+				disabled={isBusy}
+			/>
+		</label>
+	</div>
+
+	{#if solverStore.status === 'error'}
+		<div class="error">
+			<strong>Error:</strong> {solverStore.errorMessage}
+		</div>
+	{/if}
+
+	{#if solverStore.solutionCount > 0}
+		<div class="results">
+			<p class="count">
+				{solverStore.solutionCount} solution{solverStore.solutionCount !== 1 ? 's' : ''} found{solverStore.status === 'solving' ? ' so far...' : ''}
+			</p>
+
+			{#if solverStore.solutions.length > 1}
+				<div class="navigation">
+					<button class="nav-btn" onclick={() => solverStore.prevSolution()} disabled={solverStore.currentSolutionIndex === 0}>
+						&lt;
+					</button>
+					<span>{solverStore.currentSolutionIndex + 1} / {solverStore.solutions.length}</span>
+					<button class="nav-btn" onclick={() => solverStore.nextSolution()} disabled={solverStore.currentSolutionIndex >= solverStore.solutions.length - 1}>
+						&gt;
+					</button>
+				</div>
+				<button class="btn download-btn" onclick={() => solverStore.downloadSolutions()}>
+					Download {solverStore.solutions.length} solutions as JSON
+				</button>
+			{/if}
+		</div>
+	{:else if solverStore.status === 'solving' && !solverStore.candidateProgress}
+		<p class="searching">Searching...</p>
+	{/if}
+
+	{#if solverStore.status === 'solving' && solverStore.candidateProgress}
+		<div class="progress">
+			Checking candidates: {solverStore.candidateProgress.completed} / {solverStore.candidateProgress.total}
+		</div>
+	{/if}
+
+	{#if solverStore.candidateResult}
+		<div class="results">
+			<p class="count">True candidates computed</p>
+		</div>
+	{/if}
+
+	{#if solverStore.status === 'done' && solverStore.solutionCount === 0 && !solverStore.candidateResult}
+		<p class="no-solution">No solution found</p>
+	{/if}
+
+	{#if solverStore.compiledModel}
+		<details class="model-details">
+			<summary>View MiniZinc Model</summary>
+			<pre class="model-code">{solverStore.compiledModel}</pre>
+		</details>
+	{/if}
+
+	<button class="btn clear-btn" onclick={handleClearEntries} disabled={solverStore.status === 'idle'}>
+		Clear Results
+	</button>
+	</details>
+</div>
+
+<style>
+	.panel {
+		padding: 12px;
+	}
+
+	.solver-section {
+		border: none;
+	}
+
+	.solver-header {
+		cursor: pointer;
+		list-style: none;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.solver-header::-webkit-details-marker {
+		display: none;
+	}
+
+	.solver-header::before {
+		content: '▶';
+		font-size: 9px;
+		color: #888;
+		transition: transform 0.15s;
+	}
+
+	.solver-section[open] > .solver-header::before {
+		transform: rotate(90deg);
+	}
+
+	h3 {
+		margin: 0 0 8px;
+		font-size: 13px;
+		font-weight: 600;
+		color: #555;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.solver-header h3 {
+		margin: 0;
+	}
+
+	.actions {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin-bottom: 12px;
+	}
+
+	.btn {
+		padding: 8px 12px;
+		border: 1px solid #ccc;
+		background: white;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 13px;
+	}
+
+	.btn:hover:not(:disabled) {
+		background: #eee;
+	}
+
+	.btn:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+
+	.cancel-btn {
+		background: #fff3e0;
+		border-color: #ff9800;
+		color: #e65100;
+	}
+
+	.cancel-btn:hover {
+		background: #ffe0b2;
+	}
+
+	.max-solutions {
+		margin-bottom: 12px;
+		font-size: 12px;
+		color: #666;
+	}
+
+	.max-solutions input {
+		width: 70px;
+		padding: 3px 6px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
+		font-size: 12px;
+	}
+
+	.download-btn {
+		margin-top: 6px;
+		width: 100%;
+		font-size: 12px;
+	}
+
+	.clear-btn {
+		margin-top: 12px;
+		width: 100%;
+	}
+
+	.error {
+		background: #ffebee;
+		color: #c62828;
+		padding: 8px;
+		border-radius: 4px;
+		font-size: 12px;
+		margin-top: 8px;
+		word-break: break-word;
+	}
+
+	.results {
+		margin-top: 8px;
+		padding: 8px;
+		background: #f5f5f5;
+		border-radius: 4px;
+	}
+
+	.count {
+		margin: 0 0 6px;
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.navigation {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+	}
+
+	.nav-btn {
+		padding: 2px 8px;
+		border: 1px solid #ccc;
+		background: white;
+		border-radius: 3px;
+		cursor: pointer;
+	}
+
+	.nav-btn:hover:not(:disabled) {
+		background: #eee;
+	}
+
+	.nav-btn:disabled {
+		opacity: 0.3;
+	}
+
+	.searching {
+		margin-top: 8px;
+		font-size: 13px;
+		color: #666;
+		font-style: italic;
+	}
+
+	.progress {
+		margin-top: 8px;
+		font-size: 12px;
+		color: #666;
+	}
+
+	.no-solution {
+		margin-top: 8px;
+		font-size: 13px;
+		color: #888;
+		font-style: italic;
+	}
+
+	.model-details {
+		margin-top: 12px;
+		font-size: 12px;
+	}
+
+	.model-details summary {
+		cursor: pointer;
+		color: #666;
+	}
+
+	.model-code {
+		background: #f5f5f5;
+		padding: 8px;
+		border-radius: 4px;
+		font-size: 11px;
+		overflow-x: auto;
+		max-height: 300px;
+		overflow-y: auto;
+		white-space: pre-wrap;
+	}
+</style>

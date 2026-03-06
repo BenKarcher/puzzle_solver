@@ -1,0 +1,8 @@
+{
+	"id": "aqre-shading",
+	"name": "Aqre Shading",
+	"description": "No 2x2 fully shaded or unshaded area. Each region has a specific count of shaded cells (set via region values).",
+	"categories": ["shading", "aqre"],
+	"requiredSpaces": ["shading"],
+	"scope": "global"
+}
