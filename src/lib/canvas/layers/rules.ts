@@ -49,6 +49,7 @@ function createRenderHelpers(
 			const t = this.cellCenter(to);
 			ctx.strokeStyle = color;
 			ctx.lineWidth = width;
+			ctx.lineCap = 'round';
 			ctx.beginPath();
 			ctx.moveTo(f.x, f.y);
 			ctx.lineTo(t.x, t.y);

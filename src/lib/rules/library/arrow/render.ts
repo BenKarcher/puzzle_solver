@@ -11,15 +11,19 @@ export default function render(
 
 	const color = '#888888';
 	const lineWidth = helpers.cellSize * 0.06;
+	const bulbLineWidth = helpers.cellSize * 0.9;
 
-	// Draw bulb circles (stroke only) for each cell in group 0
-	for (const cell of bulb.cells) {
-		helpers.circle(cell, color, helpers.cellSize * 0.4, false);
-	}
 
 	// Draw connecting line from the last bulb cell to the first arrow cell
 	helpers.line(bulb.cells[bulb.cells.length - 1], arrow.cells[0], color, lineWidth);
 
+	// Draw bulb for each cell in group 0
+	for (let i = 0; i < bulb.cells.length - 1; i++) {
+		helpers.line(bulb.cells[i], bulb.cells[i + 1], color, bulbLineWidth);
+	}
+	for (let i = 0; i < bulb.cells.length - 1; i++) {
+		helpers.line(bulb.cells[i], bulb.cells[i + 1], '#FFFFFF', bulbLineWidth * 0.9);
+	}
 	// Draw arrow line between consecutive cells in group 1
 	for (let i = 0; i < arrow.cells.length - 1; i++) {
 		helpers.line(arrow.cells[i], arrow.cells[i + 1], color, lineWidth);
@@ -38,7 +42,7 @@ export default function render(
 		const ux = dx / len;
 		const uy = dy / len;
 
-		const headSize = helpers.cellSize * 0.15;
+		const headSize = helpers.cellSize * 0.25;
 		const ctx = helpers.ctx;
 
 		ctx.save();
