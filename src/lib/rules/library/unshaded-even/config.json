@@ -1,0 +1,8 @@
+{
+  "id": "unshaded-even",
+  "name": "Unshaded Even",
+  "description": "Unshaded (green) cells must contain even numbers",
+  "categories": ["shading", "parity"],
+  "requiredSpaces": ["numbers", "shading"],
+  "scope": "global"
+}

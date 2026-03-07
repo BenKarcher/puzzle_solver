@@ -41,6 +41,19 @@ export function handleCanvasMouseDown(
 	const mode = ui.mode;
 	const tool = ui.activeTool;
 
+	// Grid setup mode: no cell editing, only selection
+	if (mode === 'grid-setup') {
+		selection.selectCell(cell, e.shiftKey);
+		selection.startDrag();
+		return;
+	}
+
+	// Rule group editing takes priority over all other tools
+	if (mode === 'setting' && ui.selectedRuleInstanceId) {
+		puzzleStore.toggleCellInGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
+		return;
+	}
+
 	// In setting/solving mode with shading tool, toggle shading on click
 	if ((mode === 'setting' || mode === 'solving') && tool === 'shading') {
 		const isGiven = mode === 'setting';
@@ -61,12 +74,6 @@ export function handleCanvasMouseDown(
 		puzzleStore.setCellShading(cell, shadingDragValue, isGiven);
 		selection.clearSelection();
 		selection.startDrag();
-		return;
-	}
-
-	// Rule group editing: if a rule instance and group is selected, toggle cell in group
-	if (mode === 'setting' && ui.selectedRuleInstanceId) {
-		puzzleStore.toggleCellInGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
 		return;
 	}
 
@@ -118,6 +125,9 @@ export function handleCanvasMouseUp(): void {
 }
 
 export function handleKeyDown(e: KeyboardEvent): void {
+	// Don't handle keys when an overlay (e.g. custom rule editor) is open
+	if (ui.customRuleEditorOpen) return;
+
 	// Escape: deselect rule instance
 	if (e.key === 'Escape') {
 		if (ui.selectedRuleInstanceId) {
@@ -144,6 +154,24 @@ export function handleKeyDown(e: KeyboardEvent): void {
 	const cells = selection.cells;
 
 	if (cells.length === 0) return;
+
+	// Grid setup mode: only allow arrow navigation, no cell editing
+	if (mode === 'grid-setup') {
+		if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+			e.preventDefault();
+			const last = cells[cells.length - 1];
+			let newRow = last.row;
+			let newCol = last.col;
+			switch (e.key) {
+				case 'ArrowUp': newRow = Math.max(0, newRow - 1); break;
+				case 'ArrowDown': newRow = Math.min(puzzleStore.rows - 1, newRow + 1); break;
+				case 'ArrowLeft': newCol = Math.max(0, newCol - 1); break;
+				case 'ArrowRight': newCol = Math.min(puzzleStore.cols - 1, newCol + 1); break;
+			}
+			selection.selectCell({ row: newRow, col: newCol }, e.shiftKey);
+		}
+		return;
+	}
 
 	// Delete/Backspace: clear selected cells (respecting givens in solve mode)
 	if (e.key === 'Delete' || e.key === 'Backspace') {

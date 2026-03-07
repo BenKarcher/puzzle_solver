@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import type {
 	CellCoord,
 	CellValue,
+	CustomRuleDefinition,
 	PuzzleState,
 	RuleGroup,
 	RuleInstance,
@@ -71,7 +72,32 @@ class PuzzleStore {
 
 	updateSolutionSpaces(spaces: Partial<SolutionSpaces>): void {
 		this.pushHistory();
-		this.puzzle.solutionSpaces = { ...this.puzzle.solutionSpaces, ...spaces };
+		const prev = this.puzzle.solutionSpaces;
+		this.puzzle.solutionSpaces = { ...prev, ...spaces };
+
+		// Clear cell data when a solution space is disabled
+		const { rows, cols } = this.puzzle.dimensions;
+
+		if (spaces.numbers && !spaces.numbers.enabled && prev.numbers.enabled) {
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					const cell = this.puzzle.cells[r][c];
+					cell.number = null;
+					cell.numberIsGiven = false;
+					cell.pencilMarks = [];
+				}
+			}
+		}
+
+		if (spaces.shading && !spaces.shading.enabled && prev.shading.enabled) {
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					const cell = this.puzzle.cells[r][c];
+					cell.shaded = null;
+					cell.shadedIsGiven = false;
+				}
+			}
+		}
 	}
 
 	// ---- Cell mutations ----
@@ -88,7 +114,8 @@ class PuzzleStore {
 		this.pushHistory();
 		const cell = this.puzzle.cells[coord.row][coord.col];
 		cell.shaded = value;
-		cell.shadedIsGiven = isGiven;
+		// Clearing shading (null) means there's no given to preserve
+		cell.shadedIsGiven = value !== null && isGiven;
 	}
 
 	toggleCellShading(coord: CellCoord, isGiven: boolean): void {
@@ -237,6 +264,129 @@ class PuzzleStore {
 		}
 	}
 
+	// ---- Custom rules ----
+
+	addCustomRule(rule: CustomRuleDefinition): void {
+		this.pushHistory();
+		this.puzzle.customRules = [...this.puzzle.customRules, rule];
+		// Auto-enable global custom rules
+		if (rule.scope === 'global') {
+			this.puzzle.globalRules = [...this.puzzle.globalRules, rule.id];
+		}
+	}
+
+	updateCustomRule(rule: CustomRuleDefinition): void {
+		this.pushHistory();
+		this.puzzle.customRules = this.puzzle.customRules.map((r) =>
+			r.id === rule.id ? rule : r
+		);
+	}
+
+	removeCustomRule(ruleId: string): void {
+		this.pushHistory();
+		this.puzzle.customRules = this.puzzle.customRules.filter((r) => r.id !== ruleId);
+		this.puzzle.globalRules = this.puzzle.globalRules.filter((id) => id !== ruleId);
+		this.puzzle.localRules = this.puzzle.localRules.filter((inst) => inst.ruleId !== ruleId);
+	}
+
+	// ---- Apply solver results ----
+
+	applySolution(solution: Record<string, unknown>): void {
+		this.pushHistory();
+		const { rows, cols } = this.puzzle.dimensions;
+
+		// Clear all non-given cells first
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const cell = this.puzzle.cells[r][c];
+				if (!cell.numberIsGiven) {
+					cell.number = null;
+					cell.pencilMarks = [];
+				}
+				if (!cell.shadedIsGiven) {
+					cell.shaded = null;
+				}
+			}
+		}
+
+		// Apply grid (numbers) from solution
+		if (solution.grid && Array.isArray(solution.grid)) {
+			const grid = solution.grid as number[][];
+			for (let r = 0; r < Math.min(rows, grid.length); r++) {
+				for (let c = 0; c < Math.min(cols, grid[r].length); c++) {
+					const cell = this.puzzle.cells[r][c];
+					if (!cell.numberIsGiven) {
+						cell.number = grid[r][c];
+					}
+				}
+			}
+		}
+
+		// Apply shading from solution
+		if (solution.shaded && Array.isArray(solution.shaded)) {
+			const shaded = solution.shaded as boolean[][];
+			for (let r = 0; r < Math.min(rows, shaded.length); r++) {
+				for (let c = 0; c < Math.min(cols, shaded[r].length); c++) {
+					const cell = this.puzzle.cells[r][c];
+					if (!cell.shadedIsGiven) {
+						cell.shaded = shaded[r][c];
+					}
+				}
+			}
+		}
+	}
+
+	applyCandidates(candidates: { numbers?: number[][][]; shading?: ('true' | 'false' | 'both' | null)[][] }): void {
+		this.pushHistory();
+		const { rows, cols } = this.puzzle.dimensions;
+
+		// Clear all non-given cells first
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const cell = this.puzzle.cells[r][c];
+				if (!cell.numberIsGiven) {
+					cell.number = null;
+					cell.pencilMarks = [];
+				}
+				if (!cell.shadedIsGiven) {
+					cell.shaded = null;
+				}
+			}
+		}
+
+		// Apply number candidates as pencil marks (single candidate -> filled number)
+		if (candidates.numbers) {
+			for (let r = 0; r < Math.min(rows, candidates.numbers.length); r++) {
+				for (let c = 0; c < Math.min(cols, candidates.numbers[r].length); c++) {
+					const cell = this.puzzle.cells[r][c];
+					if (cell.numberIsGiven) continue;
+					const marks = candidates.numbers[r][c];
+					if (marks.length === 1) {
+						cell.number = marks[0];
+					} else if (marks.length > 1) {
+						cell.pencilMarks = [...marks];
+					}
+				}
+			}
+		}
+
+		// Apply shading candidates (determined -> set, both -> leave null)
+		if (candidates.shading) {
+			for (let r = 0; r < Math.min(rows, candidates.shading.length); r++) {
+				for (let c = 0; c < Math.min(cols, candidates.shading[r].length); c++) {
+					const cell = this.puzzle.cells[r][c];
+					if (cell.shadedIsGiven) continue;
+					const val = candidates.shading[r][c];
+					if (val === 'true') {
+						cell.shaded = true;
+					} else if (val === 'false') {
+						cell.shaded = false;
+					}
+				}
+			}
+		}
+	}
+
 	// ---- Serialization ----
 
 	exportJSON(): string {
@@ -245,6 +395,8 @@ class PuzzleStore {
 
 	importJSON(json: string): void {
 		const state = JSON.parse(json) as PuzzleState;
+		// Backward compatibility: older saves may lack customRules
+		if (!state.customRules) state.customRules = [];
 		this.loadPuzzle(state);
 	}
 

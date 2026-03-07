@@ -24,6 +24,10 @@ export default function render(
 	for (let i = 0; i < bulb.cells.length - 1; i++) {
 		helpers.line(bulb.cells[i], bulb.cells[i + 1], '#FFFFFF', bulbLineWidth * 0.9);
 	}
+	if (bulb.cells.length == 1) {
+		helpers.circle(bulb.cells[0], color, bulbLineWidth/2);
+		helpers.circle(bulb.cells[0], '#FFFFFF', bulbLineWidth * 0.9/2);
+	}
 	// Draw arrow line between consecutive cells in group 1
 	for (let i = 0; i < arrow.cells.length - 1; i++) {
 		helpers.line(arrow.cells[i], arrow.cells[i + 1], color, lineWidth);

@@ -2,6 +2,7 @@
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { ui } from '$lib/state/ui.svelte';
 	import { selection } from '$lib/state/selection.svelte';
+	import { isCustomRule } from '$lib/rules/registry';
 	import type { RuleConfig } from '$lib/model/types';
 
 	interface Props {
@@ -75,6 +76,17 @@
 			ui.selectedRuleInstanceId === instanceId ? null : instanceId
 		);
 	}
+
+	function editCustomRule(ruleId: string, e: MouseEvent) {
+		e.stopPropagation();
+		const def = puzzleStore.puzzle.customRules.find((r) => r.id === ruleId);
+		if (def) ui.openCustomRuleEditor(def);
+	}
+
+	function removeCustomRule(ruleId: string, e: MouseEvent) {
+		e.stopPropagation();
+		puzzleStore.removeCustomRule(ruleId);
+	}
 </script>
 
 <div class="panel">
@@ -87,6 +99,9 @@
 		{#if config}
 			<div class="active-rule global">
 				<span class="rule-name">{config.name}</span>
+				{#if isCustomRule(ruleId)}
+					<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(ruleId, e)}>&#9998;</button>
+				{/if}
 				<button class="remove-btn" onclick={() => toggleGlobalRule(ruleId)}>×</button>
 			</div>
 		{/if}
@@ -110,6 +125,9 @@
 						<span class="group-value">({group.value})</span>
 					{/if}
 				{/each}
+				{#if isCustomRule(instance.ruleId)}
+					<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(instance.ruleId, e)}>&#9998;</button>
+				{/if}
 				<button class="remove-btn" onclick={(e) => { e.stopPropagation(); removeLocalInstance(instance.id); }}>×</button>
 			</div>
 		{/if}
@@ -146,9 +164,17 @@
 				{:else}
 					<button class="add-btn" onclick={() => addLocalRule(rule)}>Add</button>
 				{/if}
+				{#if isCustomRule(rule.id)}
+					<button class="edit-btn" title="Edit definition" onclick={(e) => editCustomRule(rule.id, e)}>&#9998;</button>
+					<button class="remove-btn" title="Delete" onclick={(e) => removeCustomRule(rule.id, e)}>×</button>
+				{/if}
 			</div>
 		{/each}
 	</div>
+
+	<button class="custom-btn" onclick={() => ui.openCustomRuleEditor()}>
+		+ Custom Constraint
+	</button>
 </div>
 
 <style>
@@ -227,6 +253,19 @@
 		color: #e53935;
 	}
 
+	.edit-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 13px;
+		color: #999;
+		padding: 0 4px;
+	}
+
+	.edit-btn:hover {
+		color: #4287f5;
+	}
+
 	.rule-list {
 		display: flex;
 		flex-direction: column;
@@ -275,6 +314,23 @@
 
 	.add-btn:hover:not(.active) {
 		background: #eee;
+	}
+
+	.custom-btn {
+		margin-top: 12px;
+		width: 100%;
+		padding: 8px;
+		border: 1px dashed #999;
+		background: #fafafa;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 13px;
+		color: #555;
+	}
+
+	.custom-btn:hover {
+		background: #f0f0f0;
+		border-color: #666;
 	}
 
 	.empty {

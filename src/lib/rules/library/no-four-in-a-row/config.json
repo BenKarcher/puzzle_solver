@@ -1,0 +1,8 @@
+{
+  "id": "no-four-in-a-row",
+  "name": "No 4 in a Row",
+  "description": "No 4 consecutive cells in a row or column may share the same shading",
+  "categories": ["shading", "aqre"],
+  "requiredSpaces": ["shading"],
+  "scope": "global"
+}

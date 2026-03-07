@@ -63,7 +63,8 @@ export function createBlankPuzzle(rows: number = 9, cols: number = 9): PuzzleSta
 		hEdges: createHEdgeGrid(rows, cols),
 		vEdges: createVEdgeGrid(rows, cols),
 		globalRules: [],
-		localRules: []
+		localRules: [],
+		customRules: []
 	};
 }
 

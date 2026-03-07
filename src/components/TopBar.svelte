@@ -3,7 +3,7 @@
 	import { ui } from '$lib/state/ui.svelte';
 	import { history } from '$lib/state/history.svelte';
 	import { solverStore } from '$lib/solver/solver.svelte';
-	import type { AppMode } from '$lib/model/types';
+	import type { AppMode, ActiveTool } from '$lib/model/types';
 
 	const modes: { value: AppMode; label: string }[] = [
 		{ value: 'grid-setup', label: 'Grid Setup' },
@@ -11,6 +11,33 @@
 		{ value: 'setting', label: 'Setting' },
 		{ value: 'solving', label: 'Solving' }
 	];
+
+	function hasAnySolutionSpace(): boolean {
+		const s = puzzleStore.puzzle.solutionSpaces;
+		return s.numbers.enabled || s.shading.enabled || s.borders.enabled || s.lines.enabled;
+	}
+
+	function syncActiveTool(): void {
+		const s = puzzleStore.puzzle.solutionSpaces;
+		const toolToEnabled: Record<ActiveTool, boolean> = {
+			number: s.numbers.enabled,
+			shading: s.shading.enabled,
+			border: s.borders.enabled,
+			line: s.lines.enabled
+		};
+		if (toolToEnabled[ui.activeTool]) return;
+		const first = (Object.keys(toolToEnabled) as ActiveTool[]).find(t => toolToEnabled[t]);
+		if (first) ui.setActiveTool(first);
+	}
+
+	function switchMode(mode: AppMode) {
+		// Leaving grid-setup requires at least one solution space
+		if (ui.mode === 'grid-setup' && mode !== 'grid-setup' && mode !== 'region-edit') {
+			if (!hasAnySolutionSpace()) return;
+			syncActiveTool();
+		}
+		ui.setMode(mode);
+	}
 
 	function savePuzzle() {
 		const json = puzzleStore.exportJSON();
@@ -69,7 +96,8 @@
 			<button
 				class="mode-btn"
 				class:active={ui.mode === mode.value}
-				onclick={() => ui.setMode(mode.value)}
+				disabled={!hasAnySolutionSpace() && (mode.value === 'setting' || mode.value === 'solving')}
+				onclick={() => switchMode(mode.value)}
 			>
 				{mode.label}
 			</button>

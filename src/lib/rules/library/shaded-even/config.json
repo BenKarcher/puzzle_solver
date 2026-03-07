@@ -1,0 +1,8 @@
+{
+  "id": "shaded-even",
+  "name": "Shaded Even",
+  "description": "Shaded (black) cells must contain even numbers",
+  "categories": ["shading", "parity"],
+  "requiredSpaces": ["numbers", "shading"],
+  "scope": "global"
+}

@@ -22,7 +22,8 @@ export async function findTrueCandidates(
 	puzzle: PuzzleState,
 	rules: LoadedRule[],
 	onProgress?: (progress: CandidateProgress) => void,
-	signal?: AbortSignal
+	signal?: AbortSignal,
+	solver: string = 'gecode'
 ): Promise<CandidateResult> {
 	const baseModel = compilePuzzle(puzzle, rules);
 	// Remove the "solve satisfy;" line so we can append constraints
@@ -77,7 +78,7 @@ export async function findTrueCandidates(
 						baseWithoutSolve +
 						`constraint grid[${r + 1},${c + 1}] = ${v};\nsolve satisfy;\n`;
 
-					const sat = await checkSatisfiable(testModel);
+					const sat = await checkSatisfiable(testModel, solver);
 					if (sat) {
 						candidates[r][c].push(v);
 					}
@@ -110,13 +111,15 @@ export async function findTrueCandidates(
 
 				const canShade = await checkSatisfiable(
 					baseWithoutSolve +
-						`constraint shaded[${r + 1},${c + 1}] = true;\nsolve satisfy;\n`
+						`constraint shaded[${r + 1},${c + 1}] = true;\nsolve satisfy;\n`,
+					solver
 				);
 				completed++;
 
 				const canUnshade = await checkSatisfiable(
 					baseWithoutSolve +
-						`constraint shaded[${r + 1},${c + 1}] = false;\nsolve satisfy;\n`
+						`constraint shaded[${r + 1},${c + 1}] = false;\nsolve satisfy;\n`,
+					solver
 				);
 				completed++;
 

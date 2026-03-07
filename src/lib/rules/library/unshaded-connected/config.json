@@ -1,0 +1,8 @@
+{
+	"id": "unshaded-connected",
+	"name": "Unshaded Connected",
+	"description": "All unshaded cells must form a single orthogonally connected group",
+	"categories": ["shading", "connectivity"],
+	"requiredSpaces": ["shading"],
+	"scope": "global"
+}

@@ -6,9 +6,6 @@ import { drawSelectionLayer } from './layers/selection';
 import { drawBordersLayer } from './layers/borders';
 import { drawLinesLayer } from './layers/lines';
 import { drawRulesLayer } from './layers/rules';
-import { drawSolutionOverlay } from './layers/solutionOverlay';
-import { drawCandidateOverlay } from './layers/candidateOverlay';
-import type { CandidateResult } from '$lib/solver/candidates';
 
 const PADDING = 20;
 const BG_COLOR = '#ffffff';
@@ -19,8 +16,6 @@ export interface RenderContext {
 	selectedCells: CellCoord[];
 	ruleRenderers: Map<string, RenderFn>;
 	highlightedCells?: Map<string, string>;
-	displaySolution?: Record<string, unknown> | null;
-	displayCandidates?: CandidateResult | null;
 }
 
 export interface GridLayout {
@@ -81,16 +76,6 @@ export function renderGrid(
 	drawLinesLayer(ctx, puzzle, cellSize, offsetX, offsetY);
 	drawRulesLayer(ctx, puzzle, ruleRenderers, cellSize, offsetX, offsetY);
 	drawNumbersLayer(ctx, puzzle, mode, cellSize, offsetX, offsetY);
-
-	// Solution overlay (drawn on top of everything except selection)
-	if (renderCtx.displaySolution) {
-		drawSolutionOverlay(ctx, puzzle, renderCtx.displaySolution, cellSize, offsetX, offsetY);
-	}
-
-	// Candidate overlay
-	if (renderCtx.displayCandidates) {
-		drawCandidateOverlay(ctx, puzzle, renderCtx.displayCandidates, cellSize, offsetX, offsetY);
-	}
 
 	return layout;
 }

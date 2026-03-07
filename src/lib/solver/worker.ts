@@ -62,7 +62,8 @@ function wrapSolveProgress<T>(
  */
 export async function solve(
 	mznSource: string,
-	callbacks?: SolveCallbacks
+	callbacks?: SolveCallbacks,
+	solver: string = 'gecode'
 ): Promise<SolveHandle> {
 	await initSolver();
 
@@ -70,7 +71,7 @@ export async function solve(
 	model.addString(mznSource);
 
 	const solveProgress: SolveProgress = model.solve({
-		options: { solver: 'gecode' }
+		options: { solver }
 	});
 
 	let lastSolution: Record<string, unknown> | null = null;
@@ -100,7 +101,8 @@ export async function solve(
  */
 export async function solveAll(
 	mznSource: string,
-	callbacks?: SolveCallbacks
+	callbacks?: SolveCallbacks,
+	solver: string = 'gecode'
 ): Promise<SolveAllHandle> {
 	await initSolver();
 
@@ -111,7 +113,7 @@ export async function solveAll(
 
 	const solveProgress: SolveProgress = model.solve({
 		options: {
-			solver: 'gecode',
+			solver,
 			'all-solutions': true
 		}
 	});
@@ -139,14 +141,14 @@ export async function solveAll(
 /**
  * Check if a particular assignment is satisfiable.
  */
-export async function checkSatisfiable(mznSource: string): Promise<boolean> {
+export async function checkSatisfiable(mznSource: string, solver: string = 'gecode'): Promise<boolean> {
 	await initSolver();
 
 	const model = new MiniZinc.Model();
 	model.addString(mznSource);
 
 	const result: SolveResult = await model.solve({
-		options: { solver: 'gecode' }
+		options: { solver }
 	});
 
 	return result.status === 'SATISFIED' || result.status === 'ALL_SOLUTIONS' || result.status === 'OPTIMAL_SOLUTION';

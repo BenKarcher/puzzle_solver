@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
-	import { solverStore } from '$lib/solver/solver.svelte';
+	import { solverStore, AVAILABLE_SOLVERS } from '$lib/solver/solver.svelte';
 	import { getAllLoadedRules } from '$lib/rules/registry';
 
 	const isBusy = $derived(solverStore.status === 'compiling' || solverStore.status === 'solving');
@@ -24,7 +24,6 @@
 	}
 
 	function handleClearEntries() {
-		puzzleStore.clearSolveEntries();
 		solverStore.clear();
 	}
 </script>
@@ -32,6 +31,17 @@
 <div class="panel">
 	<details class="solver-section" open>
 		<summary class="solver-header"><h3>Solver</h3></summary>
+
+	<div class="solver-select">
+		<label>
+			Backend:
+			<select bind:value={solverStore.selectedSolver} disabled={isBusy}>
+				{#each AVAILABLE_SOLVERS as solver}
+					<option value={solver.id}>{solver.name}</option>
+				{/each}
+			</select>
+		</label>
+	</div>
 
 	<div class="actions">
 		<button class="btn" onclick={handleSolve} disabled={isBusy}>
@@ -163,6 +173,19 @@
 
 	.solver-header h3 {
 		margin: 0;
+	}
+
+	.solver-select {
+		margin-bottom: 10px;
+		font-size: 12px;
+		color: #666;
+	}
+
+	.solver-select select {
+		padding: 3px 6px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
+		font-size: 12px;
 	}
 
 	.actions {

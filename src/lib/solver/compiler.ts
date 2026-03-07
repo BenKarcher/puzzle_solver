@@ -163,20 +163,33 @@ function generatePredicateCall(
 ): string | null {
 	if (instance.groups.length === 0) return null;
 
-	// Convert config.id to valid MiniZinc identifier
-	const predicateName = config.id.replace(/-/g, '_');
+	// Convert config.id to valid MiniZinc identifier (or use explicit override)
+	const predicateName = config.predicateName ?? config.id.replace(/-/g, '_');
 
+	const reqSpaces = config.requiredSpaces;
 	const args: string[] = [];
 	for (const group of instance.groups) {
 		if (group.cells.length === 0) continue;
 
-		// Build array of grid references for the cells
-		const cellRefs = group.cells
-			.map((c) => `grid[${c.row + 1},${c.col + 1}]`)
-			.join(', ');
-		args.push(`[${cellRefs}]`);
+		// If this group requires a value but doesn't have one, skip the whole constraint
+		if (config.groups?.constraints.hasValue && group.value === null) return null;
 
-		if (config.groups?.constraints.hasValue && group.value !== null) {
+		// Pass cell arrays for each solution space the rule requires
+		if (reqSpaces.includes('numbers')) {
+			const cellRefs = group.cells
+				.map((c) => `grid[${c.row + 1},${c.col + 1}]`)
+				.join(', ');
+			args.push(`[${cellRefs}]`);
+		}
+
+		if (reqSpaces.includes('shading')) {
+			const shadingRefs = group.cells
+				.map((c) => `shaded[${c.row + 1},${c.col + 1}]`)
+				.join(', ');
+			args.push(`[${shadingRefs}]`);
+		}
+
+		if (config.groups?.constraints.hasValue) {
 			args.push(`${group.value}`);
 		}
 	}

@@ -85,6 +85,8 @@ export interface RuleConfig {
 		max: number;
 		constraints: RuleGroupConfig;
 	};
+	/** Override predicate name (used by custom rules) */
+	predicateName?: string;
 }
 
 export interface RuleGroup {
@@ -144,6 +146,24 @@ export interface RenderHelpers {
 	ctx: CanvasRenderingContext2D;
 }
 
+// ---- Custom rules ----
+
+export interface CustomRuleDefinition {
+	id: string;
+	name: string;
+	description: string;
+	scope: 'global' | 'local';
+	mzn: string;
+	requiredSpaces: Array<'numbers' | 'shading' | 'borders' | 'lines'>;
+	groups?: {
+		min: number;
+		max: number;
+		constraints: RuleGroupConfig;
+	};
+	/** For local rules: the predicate name used in the MiniZinc code */
+	predicateName?: string;
+}
+
 // ---- Top-level puzzle state ----
 
 export interface PuzzleState {
@@ -155,6 +175,7 @@ export interface PuzzleState {
 	vEdges: EdgeValue[][];
 	globalRules: string[];
 	localRules: RuleInstance[];
+	customRules: CustomRuleDefinition[];
 }
 
 // ---- UI types ----

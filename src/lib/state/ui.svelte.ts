@@ -1,4 +1,4 @@
-import type { AppMode, ActiveTool, SidebarTab } from '$lib/model/types';
+import type { AppMode, ActiveTool, SidebarTab, CustomRuleDefinition } from '$lib/model/types';
 
 class UIStore {
 	mode = $state<AppMode>('grid-setup');
@@ -6,6 +6,8 @@ class UIStore {
 	sidebarTab = $state<SidebarTab>('setup');
 	selectedRuleInstanceId = $state<string | null>(null);
 	selectedGroupIndex = $state<number>(0);
+	customRuleEditorOpen = $state(false);
+	customRuleEditing = $state<CustomRuleDefinition | null>(null);
 
 	setMode(mode: AppMode): void {
 		this.mode = mode;
@@ -25,6 +27,16 @@ class UIStore {
 	selectRuleInstance(instanceId: string | null, groupIndex: number = 0): void {
 		this.selectedRuleInstanceId = instanceId;
 		this.selectedGroupIndex = groupIndex;
+	}
+
+	openCustomRuleEditor(rule: CustomRuleDefinition | null = null): void {
+		this.customRuleEditing = rule;
+		this.customRuleEditorOpen = true;
+	}
+
+	closeCustomRuleEditor(): void {
+		this.customRuleEditorOpen = false;
+		this.customRuleEditing = null;
 	}
 }
 

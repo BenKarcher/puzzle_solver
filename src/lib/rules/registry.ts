@@ -1,4 +1,4 @@
-import type { RuleConfig, LoadedRule, RenderFn, GeneratorFn } from '$lib/model/types';
+import type { RuleConfig, LoadedRule, RenderFn, GeneratorFn, CustomRuleDefinition } from '$lib/model/types';
 
 // Eagerly load all config.json files
 const configModules = import.meta.glob('./library/*/config.json', { eager: true });
@@ -61,7 +61,7 @@ export function getRuleById(id: string): LoadedRule | undefined {
 }
 
 export function getAllRuleConfigs(): RuleConfig[] {
-	return allConfigs;
+	return [...allConfigs];
 }
 
 export function getAllLoadedRules(): LoadedRule[] {
@@ -76,4 +76,44 @@ export function getRuleRenderers(): Map<string, RenderFn> {
 		}
 	}
 	return renderers;
+}
+
+// ---- Custom rule registration ----
+
+const customRuleMap = new Map<string, LoadedRule>();
+
+function customToLoaded(def: CustomRuleDefinition): LoadedRule {
+	const config: RuleConfig = {
+		id: def.id,
+		name: def.name,
+		description: def.description,
+		categories: ['custom'],
+		requiredSpaces: def.requiredSpaces,
+		scope: def.scope,
+		groups: def.groups,
+		predicateName: def.predicateName
+	};
+	return { config, mzn: def.mzn };
+}
+
+export function syncCustomRules(definitions: CustomRuleDefinition[]): void {
+	// Remove old custom rules
+	for (const id of customRuleMap.keys()) {
+		ruleMap.delete(id);
+		const idx = allConfigs.findIndex((c) => c.id === id);
+		if (idx >= 0) allConfigs.splice(idx, 1);
+	}
+	customRuleMap.clear();
+
+	// Add current custom rules
+	for (const def of definitions) {
+		const loaded = customToLoaded(def);
+		ruleMap.set(def.id, loaded);
+		customRuleMap.set(def.id, loaded);
+		allConfigs.push(loaded.config);
+	}
+}
+
+export function isCustomRule(id: string): boolean {
+	return customRuleMap.has(id);
 }

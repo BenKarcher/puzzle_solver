@@ -2,12 +2,31 @@ import type { PuzzleState, LoadedRule } from '$lib/model/types';
 import { compilePuzzle } from './compiler';
 import { solve, solveAll } from './worker';
 import { findTrueCandidates, type CandidateResult, type CandidateProgress } from './candidates';
+import { puzzleStore } from '$lib/state/puzzle.svelte';
 
 export type SolverStatus = 'idle' | 'compiling' | 'solving' | 'done' | 'error';
+
+function formatError(e: unknown): string {
+	if (e instanceof Error) return e.message;
+	if (typeof e === 'object' && e !== null) {
+		// MiniZinc WASM may throw plain objects with message or error fields
+		const obj = e as Record<string, unknown>;
+		if (typeof obj.message === 'string') return obj.message;
+		if (typeof obj.error === 'string') return obj.error;
+		return JSON.stringify(e);
+	}
+	return String(e);
+}
+
+export const AVAILABLE_SOLVERS = [
+	{ id: 'gecode', name: 'Gecode' },
+	{ id: 'chuffed', name: 'Chuffed' }
+] as const;
 
 class SolverStore {
 	// Reactive state (drives UI)
 	status = $state<SolverStatus>('idle');
+	selectedSolver = $state('chuffed');
 	solutions = $state<Record<string, unknown>[]>([]);
 	currentSolutionIndex = $state(0);
 	totalSolutionCount = $state(0);
@@ -56,6 +75,7 @@ class SolverStore {
 	clear(): void {
 		this.cancel();
 		this.stopTicker();
+		const hadResults = this._count > 0 || this.candidateResult !== null;
 		this._count = 0;
 		this._stored = [];
 		this.status = 'idle';
@@ -66,6 +86,9 @@ class SolverStore {
 		this.candidateResult = null;
 		this.candidateProgress = null;
 		this.compiledModel = null;
+		if (hadResults) {
+			puzzleStore.clearSolveEntries();
+		}
 	}
 
 	cancel(): void {
@@ -94,7 +117,7 @@ class SolverStore {
 					this.solutions = [sol];
 					this.totalSolutionCount = 1;
 				}
-			});
+			}, this.selectedSolver);
 			this.cancelFn = handle.cancel;
 
 			await handle.promise;
@@ -102,13 +125,15 @@ class SolverStore {
 
 			if (this.solutions.length === 0) {
 				this.errorMessage = 'No solution found (unsatisfiable)';
+			} else {
+				puzzleStore.applySolution(this.solutions[0]);
 			}
 			this.status = 'done';
 		} catch (e) {
 			this.cancelFn = null;
 			if (this.status === 'done') return;
 			this.status = 'error';
-			this.errorMessage = e instanceof Error ? e.message : String(e);
+			this.errorMessage = formatError(e);
 		}
 	}
 
@@ -135,7 +160,7 @@ class SolverStore {
 						this._stored.push(sol);
 					}
 				}
-			});
+			}, this.selectedSolver);
 			this.cancelFn = handle.cancel;
 
 			await handle.promise;
@@ -146,6 +171,8 @@ class SolverStore {
 			this.status = 'done';
 			if (this.totalSolutionCount === 0) {
 				this.errorMessage = 'No solution found (unsatisfiable)';
+			} else if (this.solutions.length > 0) {
+				puzzleStore.applySolution(this.solutions[0]);
 			}
 		} catch (e) {
 			this.cancelFn = null;
@@ -156,7 +183,7 @@ class SolverStore {
 				this.status = 'done';
 			} else {
 				this.status = 'error';
-				this.errorMessage = e instanceof Error ? e.message : String(e);
+				this.errorMessage = formatError(e);
 			}
 		}
 	}
@@ -171,9 +198,10 @@ class SolverStore {
 		try {
 			const result = await findTrueCandidates(puzzle, rules, (progress) => {
 				this.candidateProgress = { ...progress };
-			}, controller.signal);
+			}, controller.signal, this.selectedSolver);
 			this.cancelFn = null;
 			this.candidateResult = result;
+			puzzleStore.applyCandidates(result);
 			this.status = 'done';
 		} catch (e) {
 			this.cancelFn = null;
@@ -183,19 +211,21 @@ class SolverStore {
 				return;
 			}
 			this.status = 'error';
-			this.errorMessage = e instanceof Error ? e.message : String(e);
+			this.errorMessage = formatError(e);
 		}
 	}
 
 	nextSolution(): void {
 		if (this.currentSolutionIndex < this.solutions.length - 1) {
 			this.currentSolutionIndex++;
+			puzzleStore.applySolution(this.solutions[this.currentSolutionIndex]);
 		}
 	}
 
 	prevSolution(): void {
 		if (this.currentSolutionIndex > 0) {
 			this.currentSolutionIndex--;
+			puzzleStore.applySolution(this.solutions[this.currentSolutionIndex]);
 		}
 	}
 

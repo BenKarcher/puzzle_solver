@@ -11,8 +11,6 @@
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { selection } from '$lib/state/selection.svelte';
 	import { ui } from '$lib/state/ui.svelte';
-	import { solverStore } from '$lib/solver/solver.svelte';
-
 	let canvas: HTMLCanvasElement;
 	let container: HTMLDivElement;
 	let ctx = $state<CanvasRenderingContext2D | null>(null);
@@ -57,8 +55,6 @@
 		const selectedCells = selection.cells;
 		const selectedInstanceId = ui.selectedRuleInstanceId;
 		const selectedGroupIdx = ui.selectedGroupIndex;
-		const displaySolution = solverStore.currentSolution;
-		const displayCandidates = solverStore.candidateResult;
 
 		// Build highlighted cells map for the selected rule instance
 		let highlightedCells: Map<string, string> | undefined;
@@ -88,9 +84,7 @@
 			mode,
 			selectedCells,
 			ruleRenderers,
-			highlightedCells,
-			displaySolution,
-			displayCandidates
+			highlightedCells
 		});
 	});
 
