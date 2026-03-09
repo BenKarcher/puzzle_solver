@@ -18,6 +18,18 @@ function formatError(e: unknown): string {
 	return String(e);
 }
 
+/** Decision variable keys — only these define a distinct solution. */
+const DECISION_VARS = ['grid', 'shaded', 'border_h', 'border_v', 'line_h', 'line_v'];
+
+/** Build a string key from only the decision variables of a solution. */
+function solutionKey(sol: Record<string, unknown>): string {
+	const parts: string[] = [];
+	for (const k of DECISION_VARS) {
+		if (k in sol) parts.push(JSON.stringify(sol[k]));
+	}
+	return parts.join('|');
+}
+
 export const AVAILABLE_SOLVERS = [
 	{ id: 'gecode', name: 'Gecode' },
 	{ id: 'chuffed', name: 'Chuffed' }
@@ -41,6 +53,7 @@ class SolverStore {
 	private _count = 0;
 	private _stored: Record<string, unknown>[] = [];
 	private _ticker: ReturnType<typeof setInterval> | null = null;
+	private _seenKeys: Set<string> | null = null;
 
 	get currentSolution(): Record<string, unknown> | null {
 		return this.solutions[this.currentSolutionIndex] ?? null;
@@ -78,6 +91,7 @@ class SolverStore {
 		const hadResults = this._count > 0 || this.candidateResult !== null;
 		this._count = 0;
 		this._stored = [];
+		this._seenKeys = null;
 		this.status = 'idle';
 		this.solutions = [];
 		this.currentSolutionIndex = 0;
@@ -149,12 +163,18 @@ class SolverStore {
 			const max = this.maxStoredSolutions;
 			this._count = 0;
 			this._stored = [];
+			this._seenKeys = new Set();
 
 			// Start periodic UI sync
 			this.startTicker();
 
 			const handle = await solveAll(mzn, {
 				onSolution: (sol) => {
+					// Deduplicate: auxiliary variables can produce multiple
+					// solver solutions with identical decision variable values.
+					const key = solutionKey(sol);
+					if (this._seenKeys!.has(key)) return;
+					this._seenKeys!.add(key);
 					this._count++;
 					if (this._stored.length < max) {
 						this._stored.push(sol);

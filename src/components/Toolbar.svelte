@@ -13,6 +13,15 @@
 	function isToolAvailable(space: 'numbers' | 'shading' | 'borders' | 'lines'): boolean {
 		return puzzleStore.puzzle.solutionSpaces[space].enabled;
 	}
+
+	// Auto-bump to first available tool when current tool's space is disabled
+	$effect(() => {
+		const currentTool = tools.find((t) => t.value === ui.activeTool);
+		if (currentTool && !isToolAvailable(currentTool.space)) {
+			const firstAvailable = tools.find((t) => isToolAvailable(t.space));
+			if (firstAvailable) ui.setActiveTool(firstAvailable.value);
+		}
+	});
 </script>
 
 {#if ui.mode === 'setting' || ui.mode === 'solving'}

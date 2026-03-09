@@ -44,6 +44,13 @@
 			lines: { ...current, enabled: !current.enabled }
 		});
 	}
+
+	function setMaxLines(max: number) {
+		const current = puzzleStore.puzzle.solutionSpaces.lines;
+		puzzleStore.updateSolutionSpaces({
+			lines: { ...current, maxLinesPerPair: Math.max(1, max) }
+		});
+	}
 </script>
 
 <div class="panel">
@@ -129,6 +136,22 @@
 		/>
 		Lines
 	</label>
+	{#if puzzleStore.puzzle.solutionSpaces.lines.enabled}
+		<div class="indent">
+			<div class="row">
+				<label>
+					Max lines per pair
+					<input
+						type="number"
+						value={puzzleStore.puzzle.solutionSpaces.lines.maxLinesPerPair}
+						min="1"
+						max="9"
+						onchange={(e) => setMaxLines(parseInt((e.target as HTMLInputElement).value))}
+					/>
+				</label>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>

@@ -20,8 +20,9 @@ export function createDefaultEdge(): EdgeValue {
 	return {
 		border: null,
 		borderIsGiven: false,
-		lines: 0,
-		lineIsGiven: false
+		lines: null,
+		lineIsGiven: false,
+		linePencilMarks: []
 	};
 }
 
@@ -41,16 +42,18 @@ export function createCellGrid(rows: number, cols: number): CellValue[][] {
 }
 
 export function createHEdgeGrid(rows: number, cols: number): EdgeValue[][] {
-	// Horizontal edges: between row r and r+1, so (rows-1) rows of edges, cols columns
-	return Array.from({ length: rows - 1 }, () =>
+	// Horizontal edges indexed by node: (rows+1) node rows, cols edges per row
+	// hEdges[r][c] = horizontal edge going right from node (r,c)
+	return Array.from({ length: rows + 1 }, () =>
 		Array.from({ length: cols }, () => createDefaultEdge())
 	);
 }
 
 export function createVEdgeGrid(rows: number, cols: number): EdgeValue[][] {
-	// Vertical edges: between col c and c+1, so rows rows, (cols-1) columns
+	// Vertical edges indexed by node: rows node rows, (cols+1) edges per row
+	// vEdges[r][c] = vertical edge going down from node (r,c)
 	return Array.from({ length: rows }, () =>
-		Array.from({ length: cols - 1 }, () => createDefaultEdge())
+		Array.from({ length: cols + 1 }, () => createDefaultEdge())
 	);
 }
 
@@ -81,11 +84,29 @@ export function resizePuzzle(puzzle: PuzzleState, newRows: number, newCols: numb
 		})
 	);
 
+	const hEdges: EdgeValue[][] = Array.from({ length: newRows + 1 }, (_, r) =>
+		Array.from({ length: newCols }, (_, c) => {
+			if (r < puzzle.hEdges.length && c < (puzzle.hEdges[r]?.length ?? 0)) {
+				return { ...puzzle.hEdges[r][c] };
+			}
+			return createDefaultEdge();
+		})
+	);
+
+	const vEdges: EdgeValue[][] = Array.from({ length: newRows }, (_, r) =>
+		Array.from({ length: newCols + 1 }, (_, c) => {
+			if (r < puzzle.vEdges.length && c < (puzzle.vEdges[r]?.length ?? 0)) {
+				return { ...puzzle.vEdges[r][c] };
+			}
+			return createDefaultEdge();
+		})
+	);
+
 	return {
 		...puzzle,
 		dimensions: { rows: newRows, cols: newCols },
 		cells,
-		hEdges: createHEdgeGrid(newRows, newCols),
-		vEdges: createVEdgeGrid(newRows, newCols),
+		hEdges,
+		vEdges,
 	};
 }

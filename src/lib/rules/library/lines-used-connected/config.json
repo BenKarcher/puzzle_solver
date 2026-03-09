@@ -1,0 +1,8 @@
+{
+	"id": "lines-used-connected",
+	"name": "Lines Used Connected",
+	"description": "All cells that have at least one line must form a single connected group",
+	"categories": ["lines", "connectivity"],
+	"requiredSpaces": ["lines"],
+	"scope": "global"
+}

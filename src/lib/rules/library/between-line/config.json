@@ -1,0 +1,17 @@
+{
+	"id": "between-line",
+	"name": "Between Line",
+	"description": "All cells between the endpoints must have values strictly between the endpoint values",
+	"categories": ["sudoku", "line"],
+	"requiredSpaces": ["numbers"],
+	"scope": "local",
+	"groups": {
+		"min": 1,
+		"max": 1,
+		"constraints": {
+			"minSize": 3,
+			"maxSize": null,
+			"hasValue": false
+		}
+	}
+}

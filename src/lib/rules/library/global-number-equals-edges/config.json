@@ -1,0 +1,8 @@
+{
+	"id": "global-number-equals-edges",
+	"name": "Global Number Equals Edges",
+	"description": "Every cell's number equals the count of adjacent true borders",
+	"categories": ["borders", "numbers"],
+	"requiredSpaces": ["numbers", "borders"],
+	"scope": "global"
+}

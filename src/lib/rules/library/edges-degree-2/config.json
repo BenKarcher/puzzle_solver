@@ -1,0 +1,8 @@
+{
+	"id": "edges-degree-2",
+	"name": "Edges: Degree 2",
+	"description": "Every node has exactly 2 edges connected to it",
+	"categories": ["edges", "connectivity"],
+	"requiredSpaces": ["borders"],
+	"scope": "global"
+}

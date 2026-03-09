@@ -1,0 +1,8 @@
+{
+	"id": "edges-used-connected",
+	"name": "Edges: Used Connected",
+	"description": "All nodes with at least one edge must be connected via edges",
+	"categories": ["edges", "connectivity"],
+	"requiredSpaces": ["borders"],
+	"scope": "global"
+}

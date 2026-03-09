@@ -1,0 +1,8 @@
+{
+	"id": "lines-all-connected",
+	"name": "Lines All Connected",
+	"description": "All cells must be connected via lines",
+	"categories": ["lines", "connectivity"],
+	"requiredSpaces": ["lines"],
+	"scope": "global"
+}

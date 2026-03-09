@@ -42,6 +42,12 @@
 			if (reqShading) {
 				args.push(`array[int] of var bool: shaded${suffix}`);
 			}
+			if (reqBorders) {
+				args.push(`array[int, 1..4] of var bool: borders${suffix}`);
+			}
+			if (reqLines) {
+				args.push(`array[int, 1..4] of var int: lines${suffix}`);
+			}
 			if (groupHasValue) {
 				args.push(`int: ${groupValueLabel.toLowerCase().replace(/\s+/g, '_')}${suffix}`);
 			}

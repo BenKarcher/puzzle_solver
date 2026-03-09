@@ -153,3 +153,72 @@ export async function checkSatisfiable(mznSource: string, solver: string = 'geco
 
 	return result.status === 'SATISFIED' || result.status === 'ALL_SOLUTIONS' || result.status === 'OPTIMAL_SOLUTION';
 }
+
+/**
+ * Solve and return the solution if SAT, or null if UNSAT.
+ */
+export async function solveForSolution(
+	mznSource: string,
+	solver: string = 'gecode'
+): Promise<Record<string, unknown> | null> {
+	await initSolver();
+
+	const model = new MiniZinc.Model();
+	model.addString(mznSource);
+
+	let solution: Record<string, unknown> | null = null;
+
+	const promise = wrapSolveProgress(
+		model.solve({ options: { solver } }),
+		(e: SolutionMessage) => {
+			if (e.output?.json) solution = e.output.json;
+		},
+		() => solution
+	);
+
+	return promise;
+}
+
+/**
+ * Run solveAll with a time limit, calling onSolution for each solution found.
+ * Returns whether enumeration completed and how many solutions were found.
+ */
+export async function solveAllTimed(
+	mznSource: string,
+	timeLimitMs: number,
+	onSolution: (sol: Record<string, unknown>) => void,
+	solver: string = 'gecode',
+	signal?: AbortSignal
+): Promise<{ completed: boolean; count: number }> {
+	await initSolver();
+
+	const model = new MiniZinc.Model();
+	model.addString(mznSource);
+
+	let count = 0;
+
+	const solveProgress: SolveProgress = model.solve({
+		options: {
+			solver,
+			'all-solutions': true,
+			'time-limit': timeLimitMs,
+			'random-seed': Date.now() % 1000000
+		}
+	});
+
+	if (signal) {
+		signal.addEventListener('abort', () => solveProgress.cancel(), { once: true });
+	}
+
+	const result = await wrapSolveProgress(
+		solveProgress,
+		(e: SolutionMessage) => {
+			count++;
+			if (e.output?.json) onSolution(e.output.json);
+		},
+		(result: SolveResult) => result
+	);
+
+	const completed = result.status === 'ALL_SOLUTIONS' || result.status === 'OPTIMAL_SOLUTION';
+	return { completed, count };
+}

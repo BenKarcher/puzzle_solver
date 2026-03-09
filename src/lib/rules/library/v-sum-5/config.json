@@ -1,0 +1,17 @@
+{
+	"id": "v-sum-5",
+	"name": "V (Sum 5)",
+	"description": "Two orthogonally adjacent cells must sum to 5",
+	"categories": ["sudoku", "arithmetic", "xv", "edge-clue"],
+	"requiredSpaces": ["numbers"],
+	"scope": "local",
+	"groups": {
+		"min": 1,
+		"max": 1,
+		"constraints": {
+			"minSize": 2,
+			"maxSize": 2,
+			"hasValue": false
+		}
+	}
+}

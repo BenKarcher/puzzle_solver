@@ -6,6 +6,7 @@
 		handleCanvasMouseDown,
 		handleCanvasMouseMove,
 		handleCanvasMouseUp,
+		handleCanvasContextMenu,
 		handleKeyDown
 	} from '$lib/canvas/interaction';
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
@@ -100,6 +101,10 @@
 		handleCanvasMouseUp();
 	}
 
+	function onContextMenu(e: MouseEvent) {
+		handleCanvasContextMenu(e, layout);
+	}
+
 	function onKeyDown(e: KeyboardEvent) {
 		handleKeyDown(e);
 	}
@@ -112,6 +117,7 @@
 		onmousemove={onMouseMove}
 		onmouseup={onMouseUp}
 		onmouseleave={onMouseUp}
+		oncontextmenu={onContextMenu}
 		tabindex="0"
 		aria-label="Puzzle grid"
 	></canvas>

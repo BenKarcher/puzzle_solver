@@ -1,0 +1,8 @@
+{
+	"id": "edges-all-connected",
+	"name": "Edges: All Connected",
+	"description": "All nodes must be connected via edges, forming a single connected component",
+	"categories": ["edges", "connectivity"],
+	"requiredSpaces": ["borders"],
+	"scope": "global"
+}

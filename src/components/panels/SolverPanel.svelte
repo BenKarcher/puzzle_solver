@@ -103,7 +103,11 @@
 
 	{#if solverStore.status === 'solving' && solverStore.candidateProgress}
 		<div class="progress">
-			Checking candidates: {solverStore.candidateProgress.completed} / {solverStore.candidateProgress.total}
+			{#if solverStore.candidateProgress.phase === 'sampling'}
+				Sampling solutions...
+			{:else}
+				Eliminating: {solverStore.candidateProgress.completed} / {solverStore.candidateProgress.total}
+			{/if}
 		</div>
 	{/if}
 

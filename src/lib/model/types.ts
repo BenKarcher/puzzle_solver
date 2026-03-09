@@ -60,8 +60,9 @@ export interface CellValue {
 export interface EdgeValue {
 	border: boolean | null;
 	borderIsGiven: boolean;
-	lines: number;
+	lines: number | null;
 	lineIsGiven: boolean;
+	linePencilMarks: number[];
 }
 
 // ---- Rules ----

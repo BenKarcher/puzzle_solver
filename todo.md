@@ -1,12 +1,5 @@
-# sudoku variants
-- palindrome (grey line (careful about even and odd length working))
-- sum (not rendered) just gives the sum of a certain set of cells
-- ratio dot (black dot between two cells means one is double the other)
-- negative constraint for ratio dots
-- negative constraint for kropki (if no white or black dot is present between two cells, then they cannot be consecutive or double, but note that 1,2 satisfy both dots so this is different from both seperate negative constraints since a white dot may have a 12 pair even though they have ratio 2 and their is no black dot)
-- clone the two groups are the same values in the same order (rendered as a light blue background)
-- between line (the numbers on the line must be between the first and last digit in the line (either may be the upper one))(rendered as a grey line with a grey hollow circle at either end (kind of like an arrow bulb))
-- X The two cells with an x between them must sum to 10
-- V The two cells with a v between them must sum to 5
-- XV negative constraint for X and V (if there is no X or V between two cells, then they cannot sum to 10 or 5)
-- german whisper line consecutive numbers on the line must differ by at least 5, (rendered as a green line)
+- Xs look same as givens and solving marks (make solver Xs gray instead)
+- Line mode has the bug where you can end up in no mode, copy the logic from number and shading that bumps you to a mode if you have none in setup
+- lines on their own don't produce Xs as solver output only if you have both modes selected
+- In minizinc code line_h seems to correspond to vertical lines and vice versa
+- enumerating solutions for line mode produces identical solutions, not sure if this is a rendering or a solver issue

@@ -3,6 +3,8 @@ import type {
 	CellCoord,
 	CellValue,
 	CustomRuleDefinition,
+	EdgeCoord,
+	EdgeValue,
 	PuzzleState,
 	RuleGroup,
 	RuleInstance,
@@ -13,6 +15,7 @@ import {
 	createDefaultCell,
 	resizePuzzle
 } from '$lib/model/defaults';
+import type { CandidateResult } from '$lib/solver/candidates';
 import { history } from './history.svelte';
 import { getRuleById } from '$lib/rules/registry';
 
@@ -98,6 +101,36 @@ class PuzzleStore {
 				}
 			}
 		}
+
+		if (spaces.borders && !spaces.borders.enabled && prev.borders.enabled) {
+			for (const edgeRow of this.puzzle.hEdges) {
+				for (const edge of edgeRow) {
+					edge.border = null;
+					edge.borderIsGiven = false;
+				}
+			}
+			for (const edgeRow of this.puzzle.vEdges) {
+				for (const edge of edgeRow) {
+					edge.border = null;
+					edge.borderIsGiven = false;
+				}
+			}
+		}
+
+		if (spaces.lines && !spaces.lines.enabled && prev.lines.enabled) {
+			for (const edgeRow of this.puzzle.hEdges) {
+				for (const edge of edgeRow) {
+					edge.lines = null;
+					edge.lineIsGiven = false;
+				}
+			}
+			for (const edgeRow of this.puzzle.vEdges) {
+				for (const edge of edgeRow) {
+					edge.lines = null;
+					edge.lineIsGiven = false;
+				}
+			}
+		}
 	}
 
 	// ---- Cell mutations ----
@@ -155,6 +188,40 @@ class PuzzleStore {
 		cell.pencilMarks = [];
 	}
 
+	// ---- Edge mutations ----
+
+	getEdge(coord: EdgeCoord): EdgeValue | null {
+		if (coord.direction === 'h') {
+			return this.puzzle.hEdges[coord.row]?.[coord.col] ?? null;
+		}
+		return this.puzzle.vEdges[coord.row]?.[coord.col] ?? null;
+	}
+
+	setEdgeBorder(coord: EdgeCoord, value: boolean | null, isGiven: boolean): void {
+		this.pushHistory();
+		const edge = this.getEdge(coord);
+		if (!edge) return;
+		edge.border = value;
+		edge.borderIsGiven = value !== null && isGiven;
+	}
+
+	setEdgeLines(coord: EdgeCoord, value: number | null, isGiven: boolean): void {
+		this.pushHistory();
+		const edge = this.getEdge(coord);
+		if (!edge) return;
+		edge.lines = value;
+		edge.lineIsGiven = value !== null && isGiven;
+	}
+
+	incrementEdgeLines(coord: EdgeCoord, maxLines: number, isGiven: boolean): void {
+		const edge = this.getEdge(coord);
+		if (!edge) return;
+		// null → 1 → 2 → ... → max → null
+		const current = edge.lines ?? 0;
+		const newValue = current >= maxLines ? null : current + 1;
+		this.setEdgeLines(coord, newValue, isGiven);
+	}
+
 	/** Clear only non-given data from a cell (for solving mode delete) */
 	clearNonGivens(coord: CellCoord): void {
 		this.pushHistory();
@@ -182,6 +249,18 @@ class PuzzleStore {
 				if (!cell.shadedIsGiven) {
 					cell.shaded = null;
 				}
+			}
+		}
+		for (const edgeRow of this.puzzle.hEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.borderIsGiven) edge.border = null;
+				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
+			}
+		}
+		for (const edgeRow of this.puzzle.vEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.borderIsGiven) edge.border = null;
+				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
 			}
 		}
 	}
@@ -295,7 +374,7 @@ class PuzzleStore {
 		this.pushHistory();
 		const { rows, cols } = this.puzzle.dimensions;
 
-		// Clear all non-given cells first
+		// Clear all non-given data first
 		for (let r = 0; r < rows; r++) {
 			for (let c = 0; c < cols; c++) {
 				const cell = this.puzzle.cells[r][c];
@@ -306,6 +385,18 @@ class PuzzleStore {
 				if (!cell.shadedIsGiven) {
 					cell.shaded = null;
 				}
+			}
+		}
+		for (const edgeRow of this.puzzle.hEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.borderIsGiven) edge.border = null;
+				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
+			}
+		}
+		for (const edgeRow of this.puzzle.vEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.borderIsGiven) edge.border = null;
+				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
 			}
 		}
 
@@ -334,9 +425,55 @@ class PuzzleStore {
 				}
 			}
 		}
+
+		// Apply border solutions
+		if (solution.border_h && Array.isArray(solution.border_h)) {
+			const bh = solution.border_h as boolean[][];
+			for (let r = 0; r < Math.min(this.puzzle.hEdges.length, bh.length); r++) {
+				for (let c = 0; c < Math.min(this.puzzle.hEdges[r].length, bh[r].length); c++) {
+					const edge = this.puzzle.hEdges[r][c];
+					if (!edge.borderIsGiven) edge.border = bh[r][c];
+				}
+			}
+		}
+		if (solution.border_v && Array.isArray(solution.border_v)) {
+			const bv = solution.border_v as boolean[][];
+			for (let r = 0; r < Math.min(this.puzzle.vEdges.length, bv.length); r++) {
+				for (let c = 0; c < Math.min(this.puzzle.vEdges[r].length, bv[r].length); c++) {
+					const edge = this.puzzle.vEdges[r][c];
+					if (!edge.borderIsGiven) edge.border = bv[r][c];
+				}
+			}
+		}
+
+		// Apply line solutions
+		// line_h = horizontal lines (left-right), stored on vEdges at interior columns 1..cols-1
+		// MiniZinc: line_h[1..rows, 1..cols-1] → JS array lh[r][c] → vEdges[r][c+1]
+		if (solution.line_h && Array.isArray(solution.line_h)) {
+			const lh = solution.line_h as number[][];
+			const { rows, cols } = this.puzzle.dimensions;
+			for (let r = 0; r < Math.min(rows, lh.length); r++) {
+				for (let c = 0; c < Math.min(cols - 1, lh[r]?.length ?? 0); c++) {
+					const edge = this.puzzle.vEdges[r]?.[c + 1];
+					if (edge && !edge.lineIsGiven) edge.lines = lh[r][c];
+				}
+			}
+		}
+		// line_v = vertical lines (up-down), stored on hEdges at interior rows 1..rows-1
+		// MiniZinc: line_v[1..rows-1, 1..cols] → JS array lv[r][c] → hEdges[r+1][c]
+		if (solution.line_v && Array.isArray(solution.line_v)) {
+			const lv = solution.line_v as number[][];
+			const { rows, cols } = this.puzzle.dimensions;
+			for (let r = 0; r < Math.min(rows - 1, lv.length); r++) {
+				for (let c = 0; c < Math.min(cols, lv[r]?.length ?? 0); c++) {
+					const edge = this.puzzle.hEdges[r + 1]?.[c];
+					if (edge && !edge.lineIsGiven) edge.lines = lv[r][c];
+				}
+			}
+		}
 	}
 
-	applyCandidates(candidates: { numbers?: number[][][]; shading?: ('true' | 'false' | 'both' | null)[][] }): void {
+	applyCandidates(candidates: CandidateResult): void {
 		this.pushHistory();
 		const { rows, cols } = this.puzzle.dimensions;
 
@@ -351,6 +488,19 @@ class PuzzleStore {
 				if (!cell.shadedIsGiven) {
 					cell.shaded = null;
 				}
+			}
+		}
+		// Clear non-given edges
+		for (const edgeRow of this.puzzle.hEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.borderIsGiven) edge.border = null;
+				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
+			}
+		}
+		for (const edgeRow of this.puzzle.vEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.borderIsGiven) edge.border = null;
+				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
 			}
 		}
 
@@ -385,6 +535,64 @@ class PuzzleStore {
 				}
 			}
 		}
+
+		// Apply border candidates (determined -> set, both -> leave null)
+		if (candidates.borderH) {
+			for (let r = 0; r <= rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					const edge = this.puzzle.hEdges[r]?.[c];
+					if (!edge || edge.borderIsGiven) continue;
+					const val = candidates.borderH[r]?.[c];
+					if (val === 'true') edge.border = true;
+					else if (val === 'false') edge.border = false;
+				}
+			}
+		}
+		if (candidates.borderV) {
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c <= cols; c++) {
+					const edge = this.puzzle.vEdges[r]?.[c];
+					if (!edge || edge.borderIsGiven) continue;
+					const val = candidates.borderV[r]?.[c];
+					if (val === 'true') edge.border = true;
+					else if (val === 'false') edge.border = false;
+				}
+			}
+		}
+
+		// Apply line candidates
+		// lineH[r][c-1] corresponds to vEdges[r][c] (c=1..cols-1)
+		if (candidates.lineH) {
+			for (let r = 0; r < rows; r++) {
+				for (let c = 1; c < cols; c++) {
+					const edge = this.puzzle.vEdges[r]?.[c];
+					if (!edge || edge.lineIsGiven) continue;
+					const marks = candidates.lineH[r]?.[c - 1];
+					if (!marks || marks.length === 0) continue;
+					if (marks.length === 1) {
+						edge.lines = marks[0];
+					} else {
+						edge.linePencilMarks = [...marks];
+					}
+				}
+			}
+		}
+		// lineV[r-1][c] corresponds to hEdges[r][c] (r=1..rows-1)
+		if (candidates.lineV) {
+			for (let r = 1; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					const edge = this.puzzle.hEdges[r]?.[c];
+					if (!edge || edge.lineIsGiven) continue;
+					const marks = candidates.lineV[r - 1]?.[c];
+					if (!marks || marks.length === 0) continue;
+					if (marks.length === 1) {
+						edge.lines = marks[0];
+					} else {
+						edge.linePencilMarks = [...marks];
+					}
+				}
+			}
+		}
 	}
 
 	// ---- Serialization ----
@@ -397,6 +605,17 @@ class PuzzleStore {
 		const state = JSON.parse(json) as PuzzleState;
 		// Backward compatibility: older saves may lack customRules
 		if (!state.customRules) state.customRules = [];
+		// Backward compatibility: older saves may lack linePencilMarks on edges
+		for (const edgeRow of state.hEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.linePencilMarks) edge.linePencilMarks = [];
+			}
+		}
+		for (const edgeRow of state.vEdges) {
+			for (const edge of edgeRow) {
+				if (!edge.linePencilMarks) edge.linePencilMarks = [];
+			}
+		}
 		this.loadPuzzle(state);
 	}
 

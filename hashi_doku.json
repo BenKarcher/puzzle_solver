@@ -1,0 +1,433 @@
+{
+  "name": "Untitled Puzzle",
+  "dimensions": {
+    "rows": 4,
+    "cols": 4
+  },
+  "solutionSpaces": {
+    "numbers": {
+      "enabled": true,
+      "min": 1,
+      "max": 4
+    },
+    "shading": {
+      "enabled": false
+    },
+    "borders": {
+      "enabled": false
+    },
+    "lines": {
+      "enabled": true,
+      "maxLinesPerPair": 2
+    }
+  },
+  "cells": [
+    [
+      {
+        "number": 1,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": 3,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": 4,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": 2,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      }
+    ],
+    [
+      {
+        "number": 2,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": 4,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": 3,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": 1,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      }
+    ],
+    [
+      {
+        "number": 3,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": 1,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": 2,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": 4,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      }
+    ],
+    [
+      {
+        "number": 4,
+        "numberIsGiven": true,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": 2,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": 1,
+        "numberIsGiven": true,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": 3,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      }
+    ]
+  ],
+  "hEdges": [
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 2,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 2,
+        "lineIsGiven": false
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      }
+    ]
+  ],
+  "vEdges": [
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 2,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 2,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 0,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": 1,
+        "lineIsGiven": false
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false
+      }
+    ]
+  ],
+  "globalRules": [
+    "global-number-equals-lines",
+    "latin-regions",
+    "latin-rows",
+    "latin-cols",
+    "lines-all-connected"
+  ],
+  "localRules": [],
+  "customRules": []
+}
