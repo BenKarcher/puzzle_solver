@@ -1,7 +1,7 @@
 import type { PuzzleState, LoadedRule } from '$lib/model/types';
 import { compilePuzzle } from './compiler';
-import { solve, solveAll } from './worker';
-import { findTrueCandidates, type CandidateResult, type CandidateProgress } from './candidates';
+import { solve, solveAll, runDiagnostics } from './worker';
+import { findTrueCandidates, DEFAULT_CONFIG, type CandidateResult, type CandidateProgress, type CandidateConfig } from './candidates';
 import { puzzleStore } from '$lib/state/puzzle.svelte';
 
 export type SolverStatus = 'idle' | 'compiling' | 'solving' | 'done' | 'error';
@@ -233,6 +233,64 @@ class SolverStore {
 			this.status = 'error';
 			this.errorMessage = formatError(e);
 		}
+	}
+
+	async runDiagnostics(puzzle: PuzzleState, rules: LoadedRule[]): Promise<void> {
+		const mzn = compilePuzzle(puzzle, rules);
+		await runDiagnostics(mzn, this.selectedSolver);
+	}
+
+	async benchmarkCandidates(puzzle: PuzzleState, rules: LoadedRule[]): Promise<void> {
+		const defaultPasses = DEFAULT_CONFIG.passes;
+		const plainOnly = [{ weight: 1, valueChoice: undefined as CandidateConfig['passes'][0]['valueChoice'] }];
+
+		const configs: { label: string; config: CandidateConfig }[] = [
+			// Vary total sampling budget with default passes (70/10/10/10)
+			{ label: '2s default passes', config: { samplingBudgetMs: 2000, passes: defaultPasses, maxBatchSize: 16 } },
+			{ label: '5s default passes', config: { samplingBudgetMs: 5000, passes: defaultPasses, maxBatchSize: 16 } },
+			{ label: '10s default passes', config: { samplingBudgetMs: 10000, passes: defaultPasses, maxBatchSize: 16 } },
+			// Plain only (no diversity passes) for comparison
+			{ label: '2s plain only', config: { samplingBudgetMs: 2000, passes: plainOnly, maxBatchSize: 16 } },
+			{ label: '5s plain only', config: { samplingBudgetMs: 5000, passes: plainOnly, maxBatchSize: 16 } },
+			{ label: '10s plain only', config: { samplingBudgetMs: 10000, passes: plainOnly, maxBatchSize: 16 } },
+			// Vary max batch size cap
+			{ label: '5s default, maxBatch=4', config: { samplingBudgetMs: 5000, passes: defaultPasses, maxBatchSize: 4 } },
+			{ label: '5s default, maxBatch=32', config: { samplingBudgetMs: 5000, passes: defaultPasses, maxBatchSize: 32 } },
+			// Even split across strategies
+			{ label: '5s even split', config: {
+				samplingBudgetMs: 5000,
+				passes: [
+					{ weight: 1, valueChoice: undefined },
+					{ weight: 1, valueChoice: 'indomain_min' },
+					{ weight: 1, valueChoice: 'indomain_max' },
+					{ weight: 1, valueChoice: 'indomain_median' },
+				],
+				maxBatchSize: 16,
+			}},
+		];
+
+		console.log('=== Candidate Benchmark ===');
+		console.log(`Puzzle: ${puzzle.name}, ${puzzle.dimensions.rows}x${puzzle.dimensions.cols}`);
+		console.log(`Solver: ${this.selectedSolver}`);
+		console.log('');
+
+		for (const { label, config } of configs) {
+			const controller = new AbortController();
+			const start = performance.now();
+			try {
+				await findTrueCandidates(
+					puzzle, rules, undefined, controller.signal,
+					this.selectedSolver, config
+				);
+				const elapsed = performance.now() - start;
+				console.log(`[benchmark] ${label} → ${elapsed.toFixed(0)}ms total`);
+			} catch (e) {
+				const elapsed = performance.now() - start;
+				console.log(`[benchmark] ${label} → ERROR after ${elapsed.toFixed(0)}ms: ${e}`);
+			}
+			console.log('');
+		}
+		console.log('=== Benchmark Complete ===');
 	}
 
 	nextSolution(): void {

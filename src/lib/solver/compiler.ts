@@ -3,8 +3,11 @@ import type { PuzzleState, LoadedRule, RuleConfig, RuleInstance } from '$lib/mod
 /**
  * Compile a PuzzleState + loaded rules into a complete MiniZinc model string.
  */
+export type ValueChoice = 'indomain_min' | 'indomain_max' | 'indomain_median';
+
 export interface CompileOptions {
-	randomSearch?: boolean;
+	/** When set, adds a search annotation with the given value choice strategy */
+	valueChoice?: ValueChoice;
 }
 
 export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?: CompileOptions): string {
@@ -120,26 +123,27 @@ export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?
 
 	lines.push('');
 
-	if (options?.randomSearch) {
+	if (options?.valueChoice) {
+		const vc = options.valueChoice;
 		const searchAnnotations: string[] = [];
 		if (puzzle.solutionSpaces.numbers.enabled) {
 			searchAnnotations.push(
-				'int_search([grid[i,j] | i in 1..rows, j in 1..cols], first_fail, indomain_random)'
+				`int_search([grid[i,j] | i in 1..rows, j in 1..cols], first_fail, ${vc})`
 			);
 		}
 		if (puzzle.solutionSpaces.shading.enabled) {
 			searchAnnotations.push(
-				'bool_search([shaded[i,j] | i in 1..rows, j in 1..cols], input_order, indomain_random)'
+				`bool_search([shaded[i,j] | i in 1..rows, j in 1..cols], input_order, ${vc})`
 			);
 		}
 		if (puzzle.solutionSpaces.borders.enabled) {
 			searchAnnotations.push(
-				'bool_search([border_h[i,j] | i in 1..rows+1, j in 1..cols] ++ [border_v[i,j] | i in 1..rows, j in 1..cols+1], input_order, indomain_random)'
+				`bool_search([border_h[i,j] | i in 1..rows+1, j in 1..cols] ++ [border_v[i,j] | i in 1..rows, j in 1..cols+1], input_order, ${vc})`
 			);
 		}
 		if (puzzle.solutionSpaces.lines.enabled) {
 			searchAnnotations.push(
-				'int_search([line_h[i,j] | i in 1..rows, j in 1..cols-1] ++ [line_v[i,j] | i in 1..rows-1, j in 1..cols], first_fail, indomain_random)'
+				`int_search([line_h[i,j] | i in 1..rows, j in 1..cols-1] ++ [line_v[i,j] | i in 1..rows-1, j in 1..cols], first_fail, ${vc})`
 			);
 		}
 		if (searchAnnotations.length > 0) {
