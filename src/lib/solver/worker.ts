@@ -1,15 +1,16 @@
 import * as MiniZinc from 'minizinc';
 import type { SolutionMessage, SolveProgress, SolveResult } from 'minizinc';
+import { base } from '$app/paths';
 
 let initialized = false;
 
 export async function initSolver(): Promise<void> {
 	if (initialized) return;
-	const base = window.location.origin;
+	const origin = window.location.origin;
 	await MiniZinc.init({
-		workerURL: `${base}/minizinc-worker.js`,
-		wasmURL: `${base}/minizinc.wasm`,
-		dataURL: `${base}/minizinc.data`
+		workerURL: `${origin}${base}/minizinc-worker.js`,
+		wasmURL: `${origin}${base}/minizinc.wasm`,
+		dataURL: `${origin}${base}/minizinc.data`
 	});
 	initialized = true;
 }

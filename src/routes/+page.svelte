@@ -32,6 +32,15 @@
 		</div>
 		<Sidebar {ruleConfigs} />
 	</div>
+	<footer class="footer">
+		<span>Puzzle Solver</span>
+		<span class="sep">|</span>
+		<a href="https://github.com/BenKarcher/puzzle_solver" target="_blank" rel="noopener">Source Code</a>
+		<span class="sep">|</span>
+		<a href="https://github.com/BenKarcher/puzzle_solver/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+		<span class="sep">|</span>
+		<span>Powered by <a href="https://www.minizinc.org/" target="_blank" rel="noopener">MiniZinc</a> (MPL-2.0)</span>
+	</footer>
 </div>
 
 {#if ui.customRuleEditorOpen}
@@ -60,5 +69,32 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+	}
+
+	.footer {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 4px 12px;
+		background: #f5f5f5;
+		border-top: 1px solid #ddd;
+		font-size: 11px;
+		color: #888;
+		flex-shrink: 0;
+	}
+
+	.footer a {
+		color: #666;
+		text-decoration: none;
+	}
+
+	.footer a:hover {
+		color: #333;
+		text-decoration: underline;
+	}
+
+	.footer .sep {
+		color: #ccc;
 	}
 </style>
