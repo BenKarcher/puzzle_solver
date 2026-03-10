@@ -490,7 +490,7 @@ export function handleKeyDown(e: KeyboardEvent): void {
 
 	// Number input
 	const num = parseInt(e.key);
-	if (num >= 1 && num <= 9) {
+	if (!isNaN(num) && num >= 0 && num <= 9) {
 		e.preventDefault();
 		const { min, max } = puzzleStore.puzzle.solutionSpaces.numbers;
 
@@ -517,15 +517,6 @@ export function handleKeyDown(e: KeyboardEvent): void {
 			} else {
 				puzzleStore.setCellNumber(cell, num, isGiven);
 			}
-		}
-		return;
-	}
-
-	// 0 key for region editing
-	if (e.key === '0' && mode === 'region-edit') {
-		e.preventDefault();
-		for (const cell of cells) {
-			puzzleStore.setRegionId(cell, 0);
 		}
 		return;
 	}

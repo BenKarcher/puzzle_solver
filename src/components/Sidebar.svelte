@@ -1,11 +1,31 @@
 <script lang="ts">
 	import { ui } from '$lib/state/ui.svelte';
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
+	import { solverStore } from '$lib/solver/solver.svelte';
+	import { getAllLoadedRules } from '$lib/rules/registry';
 	import GridSetup from './panels/GridSetup.svelte';
 	import RuleLibrary from './panels/RuleLibrary.svelte';
 	import RuleInstance from './panels/RuleInstance.svelte';
 	import SolverPanel from './panels/SolverPanel.svelte';
 	import type { RuleConfig } from '$lib/model/types';
+
+	function handleCheckSolution() {
+		const rules = getAllLoadedRules();
+		const snapshot = $state.snapshot(puzzleStore.puzzle);
+		solverStore.checkSolution(snapshot, rules);
+	}
+
+	// Clear check result when puzzle state changes
+	let puzzleVersion = $derived(JSON.stringify([
+		puzzleStore.puzzle.cells,
+		puzzleStore.puzzle.hEdges,
+		puzzleStore.puzzle.vEdges
+	]));
+
+	$effect(() => {
+		puzzleVersion; // track
+		solverStore.checkResult = null;
+	});
 
 	interface Props {
 		ruleConfigs: RuleConfig[];
@@ -48,7 +68,13 @@
 		<div class="panel">
 			<h3>Solving Mode</h3>
 			<p class="hint">Enter values into non-given cells. Use Ctrl+number for pencil marks.</p>
-			<button class="btn" onclick={() => puzzleStore.clearSolveEntries()}>Clear All Entries</button>
+			<button class="btn check-btn" onclick={handleCheckSolution}>Check Solution</button>
+			{#if solverStore.checkResult}
+				<div class="check-result check-{solverStore.checkResult.status}">
+					{solverStore.checkResult.message}
+				</div>
+			{/if}
+			<button class="btn" onclick={() => puzzleStore.clearSolveEntries()}>Clear Solution</button>
 		</div>
 	{/if}
 </aside>
@@ -100,5 +126,38 @@
 
 	.btn:hover {
 		background: #eee;
+	}
+
+	.check-btn {
+		background: #e3f2fd;
+		border-color: #1976d2;
+		color: #1565c0;
+		margin-bottom: 8px;
+	}
+
+	.check-btn:hover {
+		background: #bbdefb;
+	}
+
+	.check-result {
+		margin-bottom: 8px;
+		padding: 8px;
+		border-radius: 4px;
+		font-size: 12px;
+	}
+
+	.check-correct {
+		background: #e8f5e9;
+		color: #2e7d32;
+	}
+
+	.check-incomplete {
+		background: #fff3e0;
+		color: #e65100;
+	}
+
+	.check-incorrect {
+		background: #ffebee;
+		color: #c62828;
 	}
 </style>

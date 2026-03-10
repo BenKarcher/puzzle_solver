@@ -1,8 +1,14 @@
-import type { PuzzleState, LoadedRule } from '$lib/model/types';
-import { compilePuzzle } from './compiler';
-import { solve, solveAll, runDiagnostics } from './worker';
+import type { PuzzleState, LoadedRule, CellCoord } from '$lib/model/types';
+import { compilePuzzle, compilePuzzleForCheck } from './compiler';
+import { solve, solveAll, runDiagnostics, checkSatisfiable } from './worker';
 import { findTrueCandidates, DEFAULT_CONFIG, type CandidateResult, type CandidateProgress, type CandidateConfig } from './candidates';
 import { puzzleStore } from '$lib/state/puzzle.svelte';
+
+export interface CheckResult {
+	status: 'correct' | 'incomplete' | 'incorrect';
+	message: string;
+	violations: { ruleName: string; cells: CellCoord[] }[];
+}
 
 export type SolverStatus = 'idle' | 'compiling' | 'solving' | 'done' | 'error';
 
@@ -47,6 +53,7 @@ class SolverStore {
 	candidateResult = $state<CandidateResult | null>(null);
 	candidateProgress = $state<CandidateProgress | null>(null);
 	compiledModel = $state<string | null>(null);
+	checkResult = $state<CheckResult | null>(null);
 
 	// Non-reactive internals for solveAll buffering
 	private cancelFn: (() => void) | null = null;
@@ -100,6 +107,7 @@ class SolverStore {
 		this.candidateResult = null;
 		this.candidateProgress = null;
 		this.compiledModel = null;
+		this.checkResult = null;
 		if (hadResults) {
 			puzzleStore.clearSolveEntries();
 		}
@@ -232,6 +240,100 @@ class SolverStore {
 			}
 			this.status = 'error';
 			this.errorMessage = formatError(e);
+		}
+	}
+
+	async checkSolution(puzzle: PuzzleState, rules: LoadedRule[]): Promise<void> {
+		this.checkResult = null;
+		const { rows, cols } = puzzle.dimensions;
+
+		// Step 1: Check all number cells are filled
+		if (puzzle.solutionSpaces.numbers.enabled) {
+			for (let r = 0; r < rows; r++) {
+				for (let c = 0; c < cols; c++) {
+					if (puzzle.cells[r][c].number === null) {
+						this.checkResult = {
+							status: 'incomplete',
+							message: 'Some numbers have not yet been filled in.',
+							violations: []
+						};
+						return;
+					}
+				}
+			}
+		}
+
+		try {
+			// Step 2: Check overall satisfiability with user values fixed
+			const fullModel = compilePuzzleForCheck(puzzle, rules);
+			const sat = await checkSatisfiable(fullModel, this.selectedSolver);
+
+			if (sat) {
+				this.checkResult = {
+					status: 'correct',
+					message: 'The solution is correct!',
+					violations: []
+				};
+				return;
+			}
+
+			// Step 3: UNSAT — find which rules are violated
+			const violations: CheckResult['violations'] = [];
+
+			// Check each global rule individually
+			for (const ruleId of puzzle.globalRules) {
+				const rule = rules.find((r) => r.config.id === ruleId);
+				if (!rule) continue;
+
+				const testModel = compilePuzzleForCheck(puzzle, rules, new Set([ruleId]));
+				const ruleSat = await checkSatisfiable(testModel, this.selectedSolver);
+				if (!ruleSat) {
+					violations.push({ ruleName: rule.config.name, cells: [] });
+				}
+			}
+
+			// Check each local rule instance individually
+			for (const instance of puzzle.localRules) {
+				const rule = rules.find((r) => r.config.id === instance.ruleId);
+				if (!rule) continue;
+
+				const testModel = compilePuzzleForCheck(puzzle, rules, undefined, new Set([instance.id]));
+				const ruleSat = await checkSatisfiable(testModel, this.selectedSolver);
+				if (!ruleSat) {
+					const cells = instance.groups.flatMap((g) => g.cells);
+					violations.push({ ruleName: rule.config.name, cells });
+				}
+			}
+
+			// Check custom rules
+			for (const customDef of puzzle.customRules) {
+				// Custom rules are included via their ID in globalRules or localRules
+				// If they're global and already checked above, skip
+				if (puzzle.globalRules.includes(customDef.id)) continue;
+				// Local custom rules are checked via localRules above
+			}
+
+			if (violations.length > 0) {
+				const names = violations.map((v) => v.ruleName).join(', ');
+				this.checkResult = {
+					status: 'incorrect',
+					message: `The solution violates: ${names}`,
+					violations
+				};
+			} else {
+				// Could be givens or implicit constraints
+				this.checkResult = {
+					status: 'incorrect',
+					message: 'The solution is incorrect.',
+					violations: []
+				};
+			}
+		} catch (e) {
+			this.checkResult = {
+				status: 'incorrect',
+				message: `Error checking solution: ${formatError(e)}`,
+				violations: []
+			};
 		}
 	}
 

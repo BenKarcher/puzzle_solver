@@ -301,6 +301,165 @@ function generatePredicateCall(
 	return `constraint ${predicateName}(${args.join(', ')});`;
 }
 
+/**
+ * Compile a model for checking a user's solution.
+ * All cell values are fixed as constraints (treating null shading/borders/lines as false/0).
+ * Optionally restrict to only specific rules for per-rule violation checking.
+ * If onlyGlobalRules is set, only those global rules are included.
+ * If onlyLocalInstances is set, only those local rule instances are included.
+ * If neither is set, all rules are included.
+ */
+export function compilePuzzleForCheck(
+	puzzle: PuzzleState,
+	rules: LoadedRule[],
+	onlyGlobalRules?: Set<string>,
+	onlyLocalInstances?: Set<string>
+): string {
+	const lines: string[] = [];
+	const { rows, cols } = puzzle.dimensions;
+	const filterRules = onlyGlobalRules !== undefined || onlyLocalInstances !== undefined;
+
+	// 1. Dimensions
+	lines.push(`int: rows = ${rows};`);
+	lines.push(`int: cols = ${cols};`);
+	lines.push('');
+
+	// 2. Variable declarations (same as normal)
+	if (puzzle.solutionSpaces.numbers.enabled) {
+		const { min, max } = puzzle.solutionSpaces.numbers;
+		lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: grid;`);
+	}
+	if (puzzle.solutionSpaces.shading.enabled) {
+		lines.push('array[1..rows, 1..cols] of var bool: shaded;');
+	}
+	if (puzzle.solutionSpaces.borders.enabled) {
+		lines.push('array[1..rows+1, 1..cols] of var bool: border_h;');
+		lines.push('array[1..rows, 1..cols+1] of var bool: border_v;');
+	}
+	if (puzzle.solutionSpaces.lines.enabled) {
+		const maxLines = puzzle.solutionSpaces.lines.maxLinesPerPair;
+		lines.push(`array[1..rows, 1..cols-1] of var 0..${maxLines}: line_h;`);
+		lines.push(`array[1..rows-1, 1..cols] of var 0..${maxLines}: line_v;`);
+	}
+	if (puzzle.solutionSpaces.borders.enabled || puzzle.solutionSpaces.lines.enabled) {
+		lines.push('int: TOP = 1; int: RIGHT = 2; int: BOTTOM = 3; int: LEFT = 4;');
+	}
+	lines.push('');
+
+	// 3. Region data
+	if (hasRegions(puzzle)) {
+		const regionData = puzzle.cells
+			.map((row) => row.map((c) => c.regionId).join(', '))
+			.join(',\n  ');
+		lines.push(`array[1..rows, 1..cols] of int: region = array2d(1..rows, 1..cols, [\n  ${regionData}\n]);`);
+		lines.push('');
+	}
+
+	// 4. Fix ALL user values as constraints (not just givens)
+	lines.push('% User solution values');
+	if (puzzle.solutionSpaces.numbers.enabled) {
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const val = puzzle.cells[r][c].number;
+				if (val !== null) {
+					lines.push(`constraint grid[${r + 1},${c + 1}] = ${val};`);
+				}
+			}
+		}
+	}
+	if (puzzle.solutionSpaces.shading.enabled) {
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const val = puzzle.cells[r][c].shaded;
+				lines.push(`constraint shaded[${r + 1},${c + 1}] = ${val ?? false};`);
+			}
+		}
+	}
+	if (puzzle.solutionSpaces.borders.enabled) {
+		for (let r = 0; r <= rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const val = puzzle.hEdges[r]?.[c]?.border;
+				lines.push(`constraint border_h[${r + 1},${c + 1}] = ${val ?? false};`);
+			}
+		}
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c <= cols; c++) {
+				const val = puzzle.vEdges[r]?.[c]?.border;
+				lines.push(`constraint border_v[${r + 1},${c + 1}] = ${val ?? false};`);
+			}
+		}
+	}
+	if (puzzle.solutionSpaces.lines.enabled) {
+		for (let r = 0; r < rows; r++) {
+			for (let c = 1; c < cols; c++) {
+				const val = puzzle.vEdges[r]?.[c]?.lines;
+				lines.push(`constraint line_h[${r + 1},${c}] = ${val ?? 0};`);
+			}
+		}
+		for (let r = 1; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const val = puzzle.hEdges[r]?.[c]?.lines;
+				lines.push(`constraint line_v[${r},${c + 1}] = ${val ?? 0};`);
+			}
+		}
+	}
+	lines.push('');
+
+	// 5. Determine which rules to include
+	const globalRules = filterRules
+		? puzzle.globalRules.filter((id) => onlyGlobalRules?.has(id))
+		: puzzle.globalRules;
+	const localRules = filterRules
+		? puzzle.localRules.filter((inst) => onlyLocalInstances?.has(inst.id))
+		: puzzle.localRules;
+
+	const usedRuleIds = new Set<string>([
+		...globalRules,
+		...localRules.map((inst) => inst.ruleId)
+	]);
+
+	// 6. Include rule predicate definitions
+	const includedMzn = new Set<string>();
+	for (const ruleId of usedRuleIds) {
+		const rule = rules.find((r) => r.config.id === ruleId);
+		if (!rule?.mzn) continue;
+		if (includedMzn.has(ruleId)) continue;
+		includedMzn.add(ruleId);
+
+		lines.push(`% Rule: ${rule.config.name}`);
+		lines.push(rule.mzn);
+		lines.push('');
+	}
+
+	// 7. Generate constraints from JS generators (global rules)
+	for (const ruleId of globalRules) {
+		const rule = rules.find((r) => r.config.id === ruleId);
+		if (!rule?.generate) continue;
+		lines.push(`% Generated: ${rule.config.name}`);
+		const constraints = rule.generate(puzzle);
+		lines.push(...constraints);
+		lines.push('');
+	}
+
+	// 8. Generate constraint calls for local rule instances
+	for (const instance of localRules) {
+		const rule = rules.find((r) => r.config.id === instance.ruleId);
+		if (!rule) continue;
+		if (rule.generate) {
+			lines.push(`% Generated: ${rule.config.name} (instance)`);
+			const constraints = rule.generate(puzzle, instance);
+			lines.push(...constraints);
+		} else if (rule.mzn && rule.config.scope === 'local') {
+			const call = generatePredicateCall(rule.config, instance, puzzle);
+			if (call) lines.push(call);
+		}
+	}
+
+	lines.push('');
+	lines.push('solve satisfy;');
+	return lines.join('\n');
+}
+
 function hasRegions(puzzle: PuzzleState): boolean {
 	for (const row of puzzle.cells) {
 		for (const cell of row) {

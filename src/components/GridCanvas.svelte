@@ -12,6 +12,7 @@
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { selection } from '$lib/state/selection.svelte';
 	import { ui } from '$lib/state/ui.svelte';
+	import { solverStore } from '$lib/solver/solver.svelte';
 	let canvas: HTMLCanvasElement;
 	let container: HTMLDivElement;
 	let ctx = $state<CanvasRenderingContext2D | null>(null);
@@ -76,6 +77,17 @@
 					for (const cell of inst.groups[gi].cells) {
 						highlightedCells.set(`${cell.row},${cell.col}`, color);
 					}
+				}
+			}
+		}
+
+		// Overlay check-solution violation highlights
+		const checkResult = solverStore.checkResult;
+		if (checkResult && checkResult.violations.length > 0) {
+			if (!highlightedCells) highlightedCells = new Map();
+			for (const v of checkResult.violations) {
+				for (const cell of v.cells) {
+					highlightedCells.set(`${cell.row},${cell.col}`, 'rgba(244, 67, 54, 0.3)');
 				}
 			}
 		}

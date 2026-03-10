@@ -36,8 +36,9 @@
 	}
 
 	function handleClearEntries() {
-		solverStore.clear();
+		puzzleStore.clearSolveEntries();
 	}
+
 </script>
 
 <div class="panel">
@@ -146,8 +147,8 @@
 		</details>
 	{/if}
 
-	<button class="btn clear-btn" onclick={handleClearEntries} disabled={solverStore.status === 'idle'}>
-		Clear Results
+	<button class="btn clear-btn" onclick={handleClearEntries}>
+		Clear Solution
 	</button>
 	</details>
 </div>
@@ -266,7 +267,7 @@
 	}
 
 	.clear-btn {
-		margin-top: 12px;
+		margin-top: 8px;
 		width: 100%;
 	}
 
