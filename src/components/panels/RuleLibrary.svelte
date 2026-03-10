@@ -11,6 +11,7 @@
 
 	let { ruleConfigs }: Props = $props();
 	let searchQuery = $state('');
+	let libraryOpen = $state(false);
 
 	function getAvailableRules(): RuleConfig[] {
 		const enabledSpaces = new Set<string>();
@@ -20,10 +21,8 @@
 		if (spaces.borders.enabled) enabledSpaces.add('borders');
 		if (spaces.lines.enabled) enabledSpaces.add('lines');
 
-		return ruleConfigs.filter((rule) => {
-			// Filter by required spaces
+		const filtered = ruleConfigs.filter((rule) => {
 			if (!rule.requiredSpaces.every((s) => enabledSpaces.has(s))) return false;
-			// Filter by search
 			if (searchQuery) {
 				const q = searchQuery.toLowerCase();
 				return (
@@ -34,6 +33,17 @@
 			}
 			return true;
 		});
+
+		// Sort: favorites first, then alphabetically
+		const favs = ui.favoriteRules;
+		filtered.sort((a, b) => {
+			const aFav = favs.has(a.id) ? 0 : 1;
+			const bFav = favs.has(b.id) ? 0 : 1;
+			if (aFav !== bFav) return aFav - bFav;
+			return a.name.localeCompare(b.name);
+		});
+
+		return filtered;
 	}
 
 	function toggleGlobalRule(ruleId: string) {
@@ -58,6 +68,11 @@
 		}
 
 		ui.selectRuleInstance(instanceId);
+	}
+
+	function duplicateLocalRule(instanceRuleId: string) {
+		const config = ruleConfigs.find((r) => r.id === instanceRuleId);
+		if (config) addLocalRule(config);
 	}
 
 	function isGlobalEnabled(ruleId: string): boolean {
@@ -86,6 +101,11 @@
 	function removeCustomRule(ruleId: string, e: MouseEvent) {
 		e.stopPropagation();
 		puzzleStore.removeCustomRule(ruleId);
+	}
+
+	function toggleFavorite(ruleId: string, e: MouseEvent) {
+		e.stopPropagation();
+		ui.toggleFavoriteRule(ruleId);
 	}
 </script>
 
@@ -125,6 +145,7 @@
 						<span class="group-value">({group.value})</span>
 					{/if}
 				{/each}
+				<button class="dup-btn" title="Add another" onclick={(e) => { e.stopPropagation(); duplicateLocalRule(instance.ruleId); }}>+</button>
 				{#if isCustomRule(instance.ruleId)}
 					<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(instance.ruleId, e)}>&#9998;</button>
 				{/if}
@@ -138,7 +159,9 @@
 	{/if}
 	</div>
 
-	<h3>Rule Library</h3>
+	<details class="library-section" bind:open={libraryOpen}>
+		<summary class="library-header"><h3>Rule Library</h3></summary>
+
 	<input
 		class="search"
 		type="text"
@@ -149,6 +172,14 @@
 	<div class="rule-list">
 		{#each getAvailableRules() as rule}
 			<div class="rule-item">
+				<button
+					class="fav-btn"
+					class:favorited={ui.favoriteRules.has(rule.id)}
+					title={ui.favoriteRules.has(rule.id) ? 'Unfavorite' : 'Favorite'}
+					onclick={(e) => toggleFavorite(rule.id, e)}
+				>
+					{ui.favoriteRules.has(rule.id) ? '\u2605' : '\u2606'}
+				</button>
 				<div class="rule-info">
 					<span class="rule-name">{rule.name}</span>
 					<span class="rule-desc">{rule.description}</span>
@@ -175,6 +206,7 @@
 	<button class="custom-btn" onclick={() => ui.openCustomRuleEditor()}>
 		+ Custom Constraint
 	</button>
+	</details>
 </div>
 
 <style>
@@ -239,14 +271,32 @@
 		color: #666;
 	}
 
-	.remove-btn {
+	.dup-btn {
 		margin-left: auto;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 16px;
+		font-weight: 600;
+		color: #999;
+		padding: 0 4px;
+	}
+
+	.dup-btn:hover {
+		color: #4caf50;
+	}
+
+	.remove-btn {
 		background: none;
 		border: none;
 		cursor: pointer;
 		font-size: 16px;
 		color: #999;
 		padding: 0 4px;
+	}
+
+	.active-rule.global .remove-btn {
+		margin-left: auto;
 	}
 
 	.remove-btn:hover {
@@ -266,10 +316,45 @@
 		color: #4287f5;
 	}
 
+	/* Library section - collapsible */
+	.library-section {
+		border: none;
+		margin-top: 4px;
+	}
+
+	.library-header {
+		cursor: pointer;
+		list-style: none;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.library-header::-webkit-details-marker {
+		display: none;
+	}
+
+	.library-header::before {
+		content: '\25B6';
+		font-size: 9px;
+		color: #888;
+		transition: transform 0.15s;
+	}
+
+	.library-section[open] > .library-header::before {
+		transform: rotate(90deg);
+	}
+
+	.library-header h3 {
+		margin: 0;
+	}
+
 	.rule-list {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+		max-height: 300px;
+		overflow-y: auto;
 	}
 
 	.rule-item {
@@ -304,6 +389,7 @@
 		border-radius: 3px;
 		cursor: pointer;
 		font-size: 12px;
+		flex-shrink: 0;
 	}
 
 	.add-btn.active {
@@ -314,6 +400,25 @@
 
 	.add-btn:hover:not(.active) {
 		background: #eee;
+	}
+
+	.fav-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 16px;
+		color: #ccc;
+		padding: 0;
+		flex-shrink: 0;
+		line-height: 1;
+	}
+
+	.fav-btn.favorited {
+		color: #ffc107;
+	}
+
+	.fav-btn:hover {
+		color: #ffc107;
 	}
 
 	.custom-btn {

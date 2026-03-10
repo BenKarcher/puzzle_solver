@@ -8,6 +8,7 @@ class UIStore {
 	selectedGroupIndex = $state<number>(0);
 	customRuleEditorOpen = $state(false);
 	customRuleEditing = $state<CustomRuleDefinition | null>(null);
+	favoriteRules = $state<Set<string>>(new Set());
 
 	setMode(mode: AppMode): void {
 		this.mode = mode;
@@ -37,6 +38,24 @@ class UIStore {
 	closeCustomRuleEditor(): void {
 		this.customRuleEditorOpen = false;
 		this.customRuleEditing = null;
+	}
+
+	toggleFavoriteRule(ruleId: string): void {
+		const next = new Set(this.favoriteRules);
+		if (next.has(ruleId)) {
+			next.delete(ruleId);
+		} else {
+			next.add(ruleId);
+		}
+		this.favoriteRules = next;
+	}
+
+	/** Auto-favorite all rules used by the current puzzle */
+	autoFavoriteUsedRules(globalRules: string[], localRules: { ruleId: string }[]): void {
+		const next = new Set(this.favoriteRules);
+		for (const id of globalRules) next.add(id);
+		for (const inst of localRules) next.add(inst.ruleId);
+		this.favoriteRules = next;
 	}
 }
 

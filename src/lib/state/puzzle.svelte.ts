@@ -18,6 +18,7 @@ import {
 import type { CandidateResult } from '$lib/solver/candidates';
 import { history } from './history.svelte';
 import { getRuleById } from '$lib/rules/registry';
+import { ui } from './ui.svelte';
 
 class PuzzleStore {
 	puzzle = $state<PuzzleState>(createBlankPuzzle(9, 9));
@@ -52,6 +53,7 @@ class PuzzleStore {
 		this.puzzle = state;
 		history.clear();
 		history.push(structuredClone($state.snapshot(this.puzzle)));
+		ui.autoFavoriteUsedRules(state.globalRules, state.localRules);
 	}
 
 	// ---- Undo / Redo ----
