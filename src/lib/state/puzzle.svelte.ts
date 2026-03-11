@@ -16,6 +16,7 @@ import {
 	resizePuzzle
 } from '$lib/model/defaults';
 import type { CandidateResult } from '$lib/solver/candidates';
+import { buildVariableSpaces } from '$lib/solver/variable-spaces';
 import { history } from './history.svelte';
 import { getRuleById } from '$lib/rules/registry';
 import { ui } from './ui.svelte';
@@ -374,102 +375,26 @@ class PuzzleStore {
 
 	applySolution(solution: Record<string, unknown>): void {
 		this.pushHistory();
-		const { rows, cols } = this.puzzle.dimensions;
+		const spaces = buildVariableSpaces(this.puzzle);
 
 		// Clear all non-given data first
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const cell = this.puzzle.cells[r][c];
-				if (!cell.numberIsGiven) {
-					cell.number = null;
-					cell.pencilMarks = [];
+		for (const sp of spaces) {
+			for (let r = 0; r < sp.numRows; r++) {
+				for (let c = 0; c < sp.numCols; c++) {
+					sp.clearValue(r, c);
 				}
-				if (!cell.shadedIsGiven) {
-					cell.shaded = null;
-				}
-			}
-		}
-		for (const edgeRow of this.puzzle.hEdges) {
-			for (const edge of edgeRow) {
-				if (!edge.borderIsGiven) edge.border = null;
-				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
-			}
-		}
-		for (const edgeRow of this.puzzle.vEdges) {
-			for (const edge of edgeRow) {
-				if (!edge.borderIsGiven) edge.border = null;
-				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
 			}
 		}
 
-		// Apply grid (numbers) from solution
-		if (solution.grid && Array.isArray(solution.grid)) {
-			const grid = solution.grid as number[][];
-			for (let r = 0; r < Math.min(rows, grid.length); r++) {
-				for (let c = 0; c < Math.min(cols, grid[r].length); c++) {
-					const cell = this.puzzle.cells[r][c];
-					if (!cell.numberIsGiven) {
-						cell.number = grid[r][c];
+		// Apply solution values to non-given positions
+		for (const sp of spaces) {
+			const data = solution[sp.solField] as (number | boolean)[][] | undefined;
+			if (!data) continue;
+			for (let r = 0; r < Math.min(sp.numRows, data.length); r++) {
+				for (let c = 0; c < Math.min(sp.numCols, data[r]?.length ?? 0); c++) {
+					if (sp.getGiven(r, c) === undefined) {
+						sp.applyValue(r, c, data[r][c]);
 					}
-				}
-			}
-		}
-
-		// Apply shading from solution
-		if (solution.shaded && Array.isArray(solution.shaded)) {
-			const shaded = solution.shaded as boolean[][];
-			for (let r = 0; r < Math.min(rows, shaded.length); r++) {
-				for (let c = 0; c < Math.min(cols, shaded[r].length); c++) {
-					const cell = this.puzzle.cells[r][c];
-					if (!cell.shadedIsGiven) {
-						cell.shaded = shaded[r][c];
-					}
-				}
-			}
-		}
-
-		// Apply border solutions
-		if (solution.border_h && Array.isArray(solution.border_h)) {
-			const bh = solution.border_h as boolean[][];
-			for (let r = 0; r < Math.min(this.puzzle.hEdges.length, bh.length); r++) {
-				for (let c = 0; c < Math.min(this.puzzle.hEdges[r].length, bh[r].length); c++) {
-					const edge = this.puzzle.hEdges[r][c];
-					if (!edge.borderIsGiven) edge.border = bh[r][c];
-				}
-			}
-		}
-		if (solution.border_v && Array.isArray(solution.border_v)) {
-			const bv = solution.border_v as boolean[][];
-			for (let r = 0; r < Math.min(this.puzzle.vEdges.length, bv.length); r++) {
-				for (let c = 0; c < Math.min(this.puzzle.vEdges[r].length, bv[r].length); c++) {
-					const edge = this.puzzle.vEdges[r][c];
-					if (!edge.borderIsGiven) edge.border = bv[r][c];
-				}
-			}
-		}
-
-		// Apply line solutions
-		// line_h = horizontal lines (left-right), stored on vEdges at interior columns 1..cols-1
-		// MiniZinc: line_h[1..rows, 1..cols-1] → JS array lh[r][c] → vEdges[r][c+1]
-		if (solution.line_h && Array.isArray(solution.line_h)) {
-			const lh = solution.line_h as number[][];
-			const { rows, cols } = this.puzzle.dimensions;
-			for (let r = 0; r < Math.min(rows, lh.length); r++) {
-				for (let c = 0; c < Math.min(cols - 1, lh[r]?.length ?? 0); c++) {
-					const edge = this.puzzle.vEdges[r]?.[c + 1];
-					if (edge && !edge.lineIsGiven) edge.lines = lh[r][c];
-				}
-			}
-		}
-		// line_v = vertical lines (up-down), stored on hEdges at interior rows 1..rows-1
-		// MiniZinc: line_v[1..rows-1, 1..cols] → JS array lv[r][c] → hEdges[r+1][c]
-		if (solution.line_v && Array.isArray(solution.line_v)) {
-			const lv = solution.line_v as number[][];
-			const { rows, cols } = this.puzzle.dimensions;
-			for (let r = 0; r < Math.min(rows - 1, lv.length); r++) {
-				for (let c = 0; c < Math.min(cols, lv[r]?.length ?? 0); c++) {
-					const edge = this.puzzle.hEdges[r + 1]?.[c];
-					if (edge && !edge.lineIsGiven) edge.lines = lv[r][c];
 				}
 			}
 		}
@@ -477,120 +402,36 @@ class PuzzleStore {
 
 	applyCandidates(candidates: CandidateResult): void {
 		this.pushHistory();
-		const { rows, cols } = this.puzzle.dimensions;
+		const spaces = buildVariableSpaces(this.puzzle);
 
-		// Clear all non-given cells first
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const cell = this.puzzle.cells[r][c];
-				if (!cell.numberIsGiven) {
-					cell.number = null;
-					cell.pencilMarks = [];
-				}
-				if (!cell.shadedIsGiven) {
-					cell.shaded = null;
-				}
-			}
-		}
-		// Clear non-given edges
-		for (const edgeRow of this.puzzle.hEdges) {
-			for (const edge of edgeRow) {
-				if (!edge.borderIsGiven) edge.border = null;
-				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
-			}
-		}
-		for (const edgeRow of this.puzzle.vEdges) {
-			for (const edge of edgeRow) {
-				if (!edge.borderIsGiven) edge.border = null;
-				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
-			}
-		}
-
-		// Apply number candidates as pencil marks (single candidate -> filled number)
-		if (candidates.numbers) {
-			for (let r = 0; r < Math.min(rows, candidates.numbers.length); r++) {
-				for (let c = 0; c < Math.min(cols, candidates.numbers[r].length); c++) {
-					const cell = this.puzzle.cells[r][c];
-					if (cell.numberIsGiven) continue;
-					const marks = candidates.numbers[r][c];
-					if (marks.length === 1) {
-						cell.number = marks[0];
-					} else if (marks.length > 1) {
-						cell.pencilMarks = [...marks];
-					}
+		// Clear all non-given values first
+		for (const sp of spaces) {
+			for (let r = 0; r < sp.numRows; r++) {
+				for (let c = 0; c < sp.numCols; c++) {
+					sp.clearValue(r, c);
 				}
 			}
 		}
 
-		// Apply shading candidates (determined -> set, both -> leave null)
-		if (candidates.shading) {
-			for (let r = 0; r < Math.min(rows, candidates.shading.length); r++) {
-				for (let c = 0; c < Math.min(cols, candidates.shading[r].length); c++) {
-					const cell = this.puzzle.cells[r][c];
-					if (cell.shadedIsGiven) continue;
-					const val = candidates.shading[r][c];
-					if (val === 'true') {
-						cell.shaded = true;
-					} else if (val === 'false') {
-						cell.shaded = false;
-					}
-				}
-			}
-		}
-
-		// Apply border candidates (determined -> set, both -> leave null)
-		if (candidates.borderH) {
-			for (let r = 0; r <= rows; r++) {
-				for (let c = 0; c < cols; c++) {
-					const edge = this.puzzle.hEdges[r]?.[c];
-					if (!edge || edge.borderIsGiven) continue;
-					const val = candidates.borderH[r]?.[c];
-					if (val === 'true') edge.border = true;
-					else if (val === 'false') edge.border = false;
-				}
-			}
-		}
-		if (candidates.borderV) {
-			for (let r = 0; r < rows; r++) {
-				for (let c = 0; c <= cols; c++) {
-					const edge = this.puzzle.vEdges[r]?.[c];
-					if (!edge || edge.borderIsGiven) continue;
-					const val = candidates.borderV[r]?.[c];
-					if (val === 'true') edge.border = true;
-					else if (val === 'false') edge.border = false;
-				}
-			}
-		}
-
-		// Apply line candidates
-		// lineH[r][c-1] corresponds to vEdges[r][c] (c=1..cols-1)
-		if (candidates.lineH) {
-			for (let r = 0; r < rows; r++) {
-				for (let c = 1; c < cols; c++) {
-					const edge = this.puzzle.vEdges[r]?.[c];
-					if (!edge || edge.lineIsGiven) continue;
-					const marks = candidates.lineH[r]?.[c - 1];
-					if (!marks || marks.length === 0) continue;
-					if (marks.length === 1) {
-						edge.lines = marks[0];
+		// Apply candidates: single value → fill, multiple → pencil marks
+		for (const sp of spaces) {
+			const data = candidates[sp.resultField] as unknown[][] | undefined;
+			if (!data) continue;
+			for (let r = 0; r < Math.min(sp.numRows, data.length); r++) {
+				for (let c = 0; c < Math.min(sp.numCols, data[r]?.length ?? 0); c++) {
+					if (sp.getGiven(r, c) !== undefined) continue;
+					const val = data[r][c];
+					if (sp.resultKind === 'numeric') {
+						const marks = val as number[];
+						if (marks.length === 1) {
+							sp.applyValue(r, c, marks[0]);
+						} else if (marks.length > 1) {
+							sp.applyMarks(r, c, marks);
+						}
 					} else {
-						edge.linePencilMarks = [...marks];
-					}
-				}
-			}
-		}
-		// lineV[r-1][c] corresponds to hEdges[r][c] (r=1..rows-1)
-		if (candidates.lineV) {
-			for (let r = 1; r < rows; r++) {
-				for (let c = 0; c < cols; c++) {
-					const edge = this.puzzle.hEdges[r]?.[c];
-					if (!edge || edge.lineIsGiven) continue;
-					const marks = candidates.lineV[r - 1]?.[c];
-					if (!marks || marks.length === 0) continue;
-					if (marks.length === 1) {
-						edge.lines = marks[0];
-					} else {
-						edge.linePencilMarks = [...marks];
+						// boolean: 'true'/'false' → apply, 'both'/null → skip
+						if (val === 'true') sp.applyValue(r, c, true);
+						else if (val === 'false') sp.applyValue(r, c, false);
 					}
 				}
 			}

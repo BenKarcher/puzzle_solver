@@ -2,6 +2,7 @@ import type { PuzzleState, LoadedRule, CellCoord } from '$lib/model/types';
 import { compilePuzzle, compilePuzzleForCheck } from './compiler';
 import { solve, solveAll, runDiagnostics, checkSatisfiable } from './worker';
 import { findTrueCandidates, DEFAULT_CONFIG, type CandidateResult, type CandidateProgress, type CandidateConfig } from './candidates';
+import { solutionKey } from './variable-spaces';
 import { puzzleStore } from '$lib/state/puzzle.svelte';
 
 export interface CheckResult {
@@ -22,18 +23,6 @@ function formatError(e: unknown): string {
 		return JSON.stringify(e);
 	}
 	return String(e);
-}
-
-/** Decision variable keys — only these define a distinct solution. */
-const DECISION_VARS = ['grid', 'shaded', 'border_h', 'border_v', 'line_h', 'line_v'];
-
-/** Build a string key from only the decision variables of a solution. */
-function solutionKey(sol: Record<string, unknown>): string {
-	const parts: string[] = [];
-	for (const k of DECISION_VARS) {
-		if (k in sol) parts.push(JSON.stringify(sol[k]));
-	}
-	return parts.join('|');
 }
 
 export const AVAILABLE_SOLVERS = [
