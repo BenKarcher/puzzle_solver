@@ -10,21 +10,24 @@
 
 	let { editingRule = null, onclose }: Props = $props();
 
-	let name = $state(editingRule?.name ?? '');
-	let description = $state(editingRule?.description ?? '');
-	let scope = $state<'global' | 'local'>(editingRule?.scope ?? 'global');
-	let mzn = $state(editingRule?.mzn ?? '');
-	let reqNumbers = $state(editingRule?.requiredSpaces.includes('numbers') ?? true);
-	let reqShading = $state(editingRule?.requiredSpaces.includes('shading') ?? false);
-	let reqBorders = $state(editingRule?.requiredSpaces.includes('borders') ?? false);
-	let reqLines = $state(editingRule?.requiredSpaces.includes('lines') ?? false);
+	// Capture initial values from the prop (this modal is created/destroyed, not reused)
+	const initial = editingRule;
+
+	let name = $state(initial?.name ?? '');
+	let description = $state(initial?.description ?? '');
+	let scope = $state<'global' | 'local'>(initial?.scope ?? 'global');
+	let mzn = $state(initial?.mzn ?? '');
+	let reqNumbers = $state(initial?.requiredSpaces.includes('numbers') ?? true);
+	let reqShading = $state(initial?.requiredSpaces.includes('shading') ?? false);
+	let reqBorders = $state(initial?.requiredSpaces.includes('borders') ?? false);
+	let reqLines = $state(initial?.requiredSpaces.includes('lines') ?? false);
 
 	// Group config (local rules only)
-	let groupCount = $state(editingRule?.groups?.min ?? 1);
-	let groupMinSize = $state(editingRule?.groups?.constraints.minSize ?? 1);
-	let groupMaxSize = $state<number | null>(editingRule?.groups?.constraints.maxSize ?? null);
-	let groupHasValue = $state(editingRule?.groups?.constraints.hasValue ?? false);
-	let groupValueLabel = $state(editingRule?.groups?.constraints.valueLabel ?? 'Value');
+	let groupCount = $state(initial?.groups?.min ?? 1);
+	let groupMinSize = $state(initial?.groups?.constraints.minSize ?? 1);
+	let groupMaxSize = $state<number | null>(initial?.groups?.constraints.maxSize ?? null);
+	let groupHasValue = $state(initial?.groups?.constraints.hasValue ?? false);
+	let groupValueLabel = $state(initial?.groups?.constraints.valueLabel ?? 'Value');
 
 	let error = $state('');
 
