@@ -1,6 +1,23 @@
 <script lang="ts">
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 
+	const presetModules = import.meta.glob('$lib/presets/*.json', {
+		eager: true,
+		import: 'default',
+	}) as Record<string, unknown>;
+
+	const presets = Object.entries(presetModules)
+		.map(([path, data]) => {
+			const filename = path.split('/').pop() ?? path;
+			const label = filename.replace(/\.json$/, '').replace(/_/g, ' ');
+			return { label, data };
+		})
+		.sort((a, b) => a.label.localeCompare(b.label));
+
+	function loadPreset(data: unknown) {
+		puzzleStore.importJSON(JSON.stringify(data));
+	}
+
 	let rowsInput = $state(puzzleStore.rows);
 	let colsInput = $state(puzzleStore.cols);
 
@@ -54,6 +71,17 @@
 </script>
 
 <div class="panel">
+	{#if presets.length > 0}
+		<h3>Presets</h3>
+		<div class="presets">
+			{#each presets as preset}
+				<button class="btn preset-btn" onclick={() => loadPreset(preset.data)}>
+					{preset.label}
+				</button>
+			{/each}
+		</div>
+	{/if}
+
 	<h3>Grid Dimensions</h3>
 	<div class="row">
 		<label>
@@ -221,5 +249,17 @@
 
 	.btn:hover {
 		background: #eee;
+	}
+
+	.presets {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin-bottom: 4px;
+	}
+
+	.preset-btn {
+		text-align: left;
+		padding: 6px 10px;
 	}
 </style>

@@ -1,0 +1,2002 @@
+{
+  "name": "Untitled Puzzle",
+  "dimensions": {
+    "rows": 9,
+    "cols": 9
+  },
+  "solutionSpaces": {
+    "numbers": {
+      "enabled": true,
+      "min": 1,
+      "max": 9
+    },
+    "shading": {
+      "enabled": false
+    },
+    "borders": {
+      "enabled": false
+    },
+    "lines": {
+      "enabled": false,
+      "maxLinesPerPair": 1
+    }
+  },
+  "cells": [
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 1
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 2
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 3
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 4
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 5
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 6
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 7
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 8
+      }
+    ]
+  ],
+  "hEdges": [
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ]
+  ],
+  "vEdges": [
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ]
+  ],
+  "globalRules": [
+    "latin-cols",
+    "latin-regions",
+    "latin-rows"
+  ],
+  "localRules": [],
+  "customRules": [],
+  "favoriteRules": []
+}

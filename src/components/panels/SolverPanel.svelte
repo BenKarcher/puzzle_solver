@@ -23,18 +23,6 @@
 		solverStore.findCandidates(snapshot, rules);
 	}
 
-	function handleBenchmark() {
-		const rules = getAllLoadedRules();
-		const snapshot = $state.snapshot(puzzleStore.puzzle);
-		solverStore.benchmarkCandidates(snapshot, rules);
-	}
-
-	function handleDiagnostics() {
-		const rules = getAllLoadedRules();
-		const snapshot = $state.snapshot(puzzleStore.puzzle);
-		solverStore.runDiagnostics(snapshot, rules);
-	}
-
 	function handleClearEntries() {
 		puzzleStore.clearSolveEntries();
 	}
@@ -68,12 +56,6 @@
 		</button>
 		<button class="btn cancel-btn" onclick={() => solverStore.cancel()} disabled={!isBusy}>
 			Cancel
-		</button>
-		<button class="btn" onclick={handleDiagnostics} title="Run diagnostics (check console)">
-			Diagnostics
-		</button>
-		<button class="btn" onclick={handleBenchmark} disabled={isBusy} title="Run benchmark (check console)">
-			Benchmark
 		</button>
 	</div>
 

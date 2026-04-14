@@ -42,8 +42,6 @@ export interface CandidateConfig {
 	samplingBudgetMs: number;
 	/** Sampling passes to run in order. Default: 70% plain, 10% each min/max/median */
 	passes: SamplingPass[];
-	/** Max batch size for adaptive OR elimination (batch grows on UNSAT, shrinks on SAT) */
-	maxBatchSize: number;
 }
 
 export const DEFAULT_CONFIG: CandidateConfig = {
@@ -54,7 +52,6 @@ export const DEFAULT_CONFIG: CandidateConfig = {
 		{ weight: 1, valueChoice: 'indomain_max' },
 		{ weight: 1, valueChoice: 'indomain_median' },
 	],
-	maxBatchSize: 16,
 };
 
 /**
@@ -71,6 +68,8 @@ export async function findTrueCandidates(
 	solver: string = 'gecode',
 	config: CandidateConfig = DEFAULT_CONFIG,
 ): Promise<CandidateResult> {
+	// [profile] compile timing
+	const compileT0 = performance.now();
 	const normalModel = compilePuzzle(puzzle, rules);
 
 	// Compile models for each unique pass strategy
@@ -82,6 +81,8 @@ export async function findTrueCandidates(
 			passModels.set(key, compilePuzzle(puzzle, rules, { valueChoice: pass.valueChoice }));
 		}
 	}
+	const compileMs = performance.now() - compileT0;
+	console.log(`[candidates profile] compile: ${compileMs | 0}ms (${passModels.size} models)`);
 
 	// Build variable space descriptors and initialize unknown tracking
 	const spaces = buildVariableSpaces(puzzle);
@@ -96,18 +97,15 @@ export async function findTrueCandidates(
 		harvestSolutionGeneric(spaces, possibles, sol);
 	}
 
-	// Track candidates proven impossible (UNSAT)
-	const impossible = new Set<Candidate>();
-
 	// Helpers
 	function getUnknowns(): Candidate[] {
-		return allCandidates.filter((c) => !impossible.has(c) && !possibles.get(c.key)?.has(c.value));
+		return allCandidates.filter((c) => !possibles.get(c.key)?.has(c.value));
 	}
 
 	function getUnknownCount(): number {
 		let count = 0;
 		for (const c of allCandidates) {
-			if (!impossible.has(c) && !possibles.get(c.key)?.has(c.value)) count++;
+			if (!possibles.get(c.key)?.has(c.value)) count++;
 		}
 		return count;
 	}
@@ -116,12 +114,41 @@ export async function findTrueCandidates(
 	let totalSolutionCount = 0;
 	let allSolutionsFound = false;
 
+	// [profile] phase accumulators
+	let samplingHarvestMs = 0;
+	let samplingWallMs = 0;
+	let noveltySolveMs = 0;
+	let noveltyHarvestMs = 0;
+	let noveltyOverheadMs = 0;
+	// [profile] MiniZinc-internal stats (flatTime + solveTime are reported in seconds)
+	let samplingFlatMs = 0;
+	let samplingMznSolveMs = 0;
+	let noveltyFlatMs = 0;
+	let noveltyMznSolveMs = 0;
+	function accStats(target: 'sampling' | 'novelty', stats: Record<string, unknown>): void {
+		const flat = typeof stats.flatTime === 'number' ? stats.flatTime * 1000 : 0;
+		const solveT = typeof stats.solveTime === 'number' ? stats.solveTime * 1000 : 0;
+		if (target === 'sampling') {
+			samplingFlatMs += flat;
+			samplingMznSolveMs += solveT;
+		} else {
+			noveltyFlatMs += flat;
+			noveltyMznSolveMs += solveT;
+		}
+	}
+
 	// --- Step 1: Multi-pass sampling ---
 	// Normalize pass weights to compute per-pass time budgets
 	const totalWeight = config.passes.reduce((s, p) => s + p.weight, 0);
 
+	// Local abort controller so we can cancel sampling early when all unknowns resolve
+	const samplingController = new AbortController();
+	if (signal) {
+		signal.addEventListener('abort', () => samplingController.abort(), { once: true });
+	}
+
 	for (let i = 0; i < config.passes.length; i++) {
-		if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+		if (samplingController.signal.aborted) break;
 
 		const pass = config.passes[i];
 		const passTimeMs = Math.round((pass.weight / totalWeight) * config.samplingBudgetMs);
@@ -131,15 +158,29 @@ export async function findTrueCandidates(
 		const model = passModels.get(passKey)!;
 
 		let passCount = 0;
+		let passHarvestMs = 0;
 		const pt0 = performance.now();
 		const result = await solveAllTimed(
 			model,
 			passTimeMs,
-			(sol) => { passCount++; totalSolutionCount++; harvest(sol); },
+			(sol) => {
+				passCount++;
+				totalSolutionCount++;
+				const h0 = performance.now();
+				harvest(sol);
+				const allResolved = getUnknownCount() === 0;
+				passHarvestMs += performance.now() - h0;
+				if (allResolved) {
+					samplingController.abort();
+				}
+			},
 			solver,
-			signal
+			samplingController.signal,
+			(stats) => accStats('sampling', stats),
 		);
 		const pt1 = performance.now();
+		samplingHarvestMs += passHarvestMs;
+		samplingWallMs += pt1 - pt0;
 
 		const resolved = totalUnknowns - getUnknownCount();
 		console.log(
@@ -150,7 +191,7 @@ export async function findTrueCandidates(
 
 		onProgress?.({ phase: 'sampling', completed: resolved, total: totalUnknowns });
 
-		if (result.completed) {
+		if (result.completed || getUnknownCount() === 0) {
 			allSolutionsFound = true;
 			break;
 		}
@@ -167,72 +208,97 @@ export async function findTrueCandidates(
 	// --- Step 2: If all solutions found, we're done ---
 	if (allSolutionsFound) {
 		console.log(`[candidates] total: ${performance.now() - t0 | 0}ms (sampling only)`);
+		console.table({
+			'js.compile': { ms: compileMs | 0 },
+			'sampling.solve': { ms: (samplingWallMs - samplingHarvestMs) | 0 },
+			'  └ mzn.flatten': { ms: samplingFlatMs | 0 },
+			'  └ mzn.solve': { ms: samplingMznSolveMs | 0 },
+			'sampling.harvest': { ms: samplingHarvestMs | 0 },
+			total: { ms: (performance.now() - t0) | 0 },
+		});
 		return buildCandidateResult(spaces, possibles);
 	}
 
-	// --- Step 3: Batch elimination of remaining unknowns ---
+	// --- Step 3: Novelty constraint loop for remaining unknowns ---
+	// Each iteration builds an OR of ALL unknowns: "the solution must contain
+	// at least one candidate I haven't confirmed yet."
+	// SAT → harvest (resolves many unknowns at once), repeat with fewer unknowns.
+	// UNSAT → no solution uses ANY remaining unknown. All are false. Done.
 	let unknowns = getUnknowns();
 	onProgress?.({ phase: 'eliminating', completed: totalUnknowns - unknowns.length, total: totalUnknowns });
 
-	let batchCount = 0;
-	let satCount = 0;
-	let unsatCount = 0;
-	let currentBatchSize = 1; // Start small — early unknowns are likely SAT
+	let iterCount = 0;
 
-	console.log(`[candidates] starting elimination: ${unknowns.length} unknowns remaining`);
+	if (unknowns.length > 0) {
+		console.log(`[candidates] novelty elimination: ${unknowns.length} unknowns remaining`);
+	}
 
 	while (unknowns.length > 0) {
 		if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
-		const batch = unknowns.slice(0, currentBatchSize);
-		batchCount++;
+		iterCount++;
 
-		// Build OR constraint and append to normal model (MiniZinc allows extra constraints)
-		const batchDesc = batch.map((c) => `${c.varExpr}=${c.value}`).join(' | ');
-		const orParts = batch.map((c) => `(${c.varExpr} = ${c.value})`);
-		const orConstraint = `\nconstraint ${orParts.join(' \\/ ')};`;
-		const testModel = normalModel + orConstraint;
+		// Build novelty constraint: OR of all remaining unknowns
+		const oh0 = performance.now();
+		const orParts = unknowns.map((c) =>
+			typeof c.value === 'boolean'
+				? (c.value ? `(${c.varExpr})` : `(not ${c.varExpr})`)
+				: `(${c.varExpr} = ${c.value})`
+		);
+		const noveltyConstraint = `\nconstraint ${orParts.join(' \\/ ')};`;
+		const testModel = normalModel + noveltyConstraint;
+		noveltyOverheadMs += performance.now() - oh0;
 
 		const bt0 = performance.now();
-		const sol = await solveForSolution(testModel, solver);
+		const sol = await solveForSolution(testModel, solver, (stats) => accStats('novelty', stats));
 		const bt1 = performance.now();
+		noveltySolveMs += bt1 - bt0;
 
-		const prevUnknowns = unknowns.length;
 		if (sol) {
-			satCount++;
+			const prevCount = unknowns.length;
+			const nh0 = performance.now();
 			harvest(sol);
+			const oh1 = performance.now();
 			unknowns = getUnknowns();
-			const eliminated = prevUnknowns - unknowns.length;
-			currentBatchSize = Math.max(1, currentBatchSize - 1);
+			noveltyHarvestMs += oh1 - nh0;
+			noveltyOverheadMs += performance.now() - oh1;
+			const resolved = prevCount - unknowns.length;
 			console.log(
-				`[batch ${batchCount}, size=${batch.length}] SAT in ${bt1 - bt0 | 0}ms, ` +
-				`resolved ${eliminated} unknowns (${unknowns.length} left). ` +
-				`Tested: ${batchDesc}`
+				`[novelty ${iterCount}] SAT in ${bt1 - bt0 | 0}ms, ` +
+				`resolved ${resolved} unknowns (${unknowns.length} remaining)`
 			);
 		} else {
-			unsatCount++;
-			for (const c of batch) impossible.add(c);
-			unknowns = getUnknowns();
-			const eliminated = prevUnknowns - unknowns.length;
-			currentBatchSize = Math.min(unknowns.length, config.maxBatchSize, currentBatchSize + 1);
 			console.log(
-				`[batch ${batchCount}, size=${batch.length}] UNSAT in ${bt1 - bt0 | 0}ms, ` +
-				`eliminated ${eliminated} impossible (${unknowns.length} left). ` +
-				`Tested: ${batchDesc}`
+				`[novelty ${iterCount}] UNSAT in ${bt1 - bt0 | 0}ms → ` +
+				`all ${unknowns.length} remaining unknowns are false. Done.`
 			);
+			unknowns = [];
 		}
 
-		const newResolved = totalUnknowns - unknowns.length;
-		onProgress?.({ phase: 'eliminating', completed: newResolved, total: totalUnknowns });
+		onProgress?.({ phase: 'eliminating', completed: totalUnknowns - unknowns.length, total: totalUnknowns });
 	}
 
 	const t2 = performance.now();
 	console.log(
-		`[candidates] elimination: ${t2 - t1 | 0}ms, ` +
-		`${batchCount} batches (${satCount} SAT, ${unsatCount} UNSAT), ` +
-		`maxBatchSize=${config.maxBatchSize}`
+		`[candidates] novelty: ${t2 - t1 | 0}ms, ${iterCount} iterations`
 	);
 	console.log(`[candidates] total: ${t2 - t0 | 0}ms`);
+
+	// [profile] breakdown summary
+	const samplingSolveMs = samplingWallMs - samplingHarvestMs;
+	console.table({
+		'js.compile': { ms: compileMs | 0 },
+		'sampling.solve': { ms: samplingSolveMs | 0 },
+		'  └ mzn.flatten': { ms: samplingFlatMs | 0 },
+		'  └ mzn.solve': { ms: samplingMznSolveMs | 0 },
+		'sampling.harvest': { ms: samplingHarvestMs | 0 },
+		'novelty.solve': { ms: noveltySolveMs | 0 },
+		'  └ mzn.flatten ': { ms: noveltyFlatMs | 0 },
+		'  └ mzn.solve ': { ms: noveltyMznSolveMs | 0 },
+		'novelty.harvest': { ms: noveltyHarvestMs | 0 },
+		'novelty.overhead': { ms: noveltyOverheadMs | 0 },
+		total: { ms: (t2 - t0) | 0 },
+	});
 
 	return buildCandidateResult(spaces, possibles);
 }

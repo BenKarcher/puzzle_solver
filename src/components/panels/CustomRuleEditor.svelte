@@ -11,6 +11,7 @@
 	let { editingRule = null, onclose }: Props = $props();
 
 	// Capture initial values from the prop (this modal is created/destroyed, not reused)
+	// svelte-ignore state_referenced_locally
 	const initial = editingRule;
 
 	let name = $state(initial?.name ?? '');
@@ -106,9 +107,8 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="overlay" onclick={handleOverlayClick}>
-	<div class="editor-modal">
+<div class="overlay" role="presentation" onclick={handleOverlayClick}>
+	<div class="editor-modal" role="dialog" aria-modal="true" aria-label="Custom constraint editor">
 		<h2>{editingRule ? 'Edit' : 'New'} Custom Constraint</h2>
 
 		<div class="form-row">

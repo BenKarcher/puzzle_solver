@@ -441,11 +441,15 @@ class PuzzleStore {
 	// ---- Serialization ----
 
 	exportJSON(): string {
-		return JSON.stringify($state.snapshot(this.puzzle), null, 2);
+		return JSON.stringify({
+			...$state.snapshot(this.puzzle),
+			favoriteRules: [...ui.favoriteRules],
+		}, null, 2);
 	}
 
 	importJSON(json: string): void {
-		const state = JSON.parse(json) as PuzzleState;
+		const parsed = JSON.parse(json) as PuzzleState & { favoriteRules?: string[] };
+		const { favoriteRules, ...state } = parsed;
 		// Backward compatibility: older saves may lack customRules
 		if (!state.customRules) state.customRules = [];
 		// Backward compatibility: older saves may lack linePencilMarks on edges
@@ -460,6 +464,12 @@ class PuzzleStore {
 			}
 		}
 		this.loadPuzzle(state);
+		if (Array.isArray(favoriteRules)) {
+			ui.favoriteRules = new Set(favoriteRules);
+		}
+		if (ui.mode === 'grid-setup' || ui.mode === 'region-edit') {
+			ui.setMode('setting');
+		}
 	}
 
 	getCell(row: number, col: number): CellValue {
