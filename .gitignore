@@ -21,3 +21,13 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Solver build (keep build.sh, ignore cloned repos + build artifacts)
+/solver-build/emsdk/
+/solver-build/chuffed/
+/solver-build/libminizinc/
+/solver-build/minizinc-js/
+/solver-build/chuffed-build/
+/solver-build/chuffed-install/
+/solver-build/mzn-build/
+/solver-build/mzn-install/

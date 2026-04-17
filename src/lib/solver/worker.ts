@@ -243,3 +243,52 @@ export async function solveAllTimed(
 	return { completed, count };
 }
 
+/**
+ * Run true-candidates computation natively in Chuffed.
+ * The solver internally tracks candidate sets and posts novelty clauses,
+ * emitting each distinct solution as it's found. Terminates when all
+ * candidates are resolved or UNSAT.
+ */
+export async function solveTrueCandidates(
+	mznSource: string,
+	onSolution: (sol: Record<string, unknown>) => void,
+	signal?: AbortSignal
+): Promise<{ completed: boolean; count: number }> {
+	await initSolver();
+
+	const model = new MiniZinc.Model();
+	model.addString(mznSource);
+
+	let count = 0;
+
+	const solveProgress: SolveProgress = model.solve({
+		options: {
+			solver: 'chuffed',
+			'true-candidates': true,
+		}
+	});
+
+	if (signal) {
+		signal.addEventListener('abort', () => solveProgress.cancel(), { once: true });
+	}
+
+	let result: SolveResult;
+	try {
+		result = await wrapSolveProgress(
+			solveProgress,
+			(e: SolutionMessage) => {
+				count++;
+				if (e.output?.json) onSolution(e.output.json);
+			},
+			(r: SolveResult) => r
+		);
+	} catch {
+		return { completed: false, count };
+	}
+
+	const completed = result.status === 'ALL_SOLUTIONS' || result.status === 'OPTIMAL_SOLUTION'
+		|| result.status === 'SATISFIED';
+	return { completed, count };
+}
+
+

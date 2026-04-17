@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>Chuffed True-Candidates Test</title></head>
+<body>
+<h2>Chuffed True-Candidates Debug</h2>
+<pre id="log"></pre>
+<script type="module">
+const log = document.getElementById('log');
+function print(msg) {
+  log.textContent += msg + '\n';
+  console.log(msg);
+}
+
+import * as MiniZinc from '/minizinc-worker.js';
+
+// Actually we need to use the proper minizinc module
+// Let's load it from our static files
+</script>
+<script>
+// Simpler: use the puzzle solver's own dev server
+// Just open the browser console and paste:
+</script>
+<h3>Open browser console on the puzzle solver dev server and paste:</h3>
+<pre style="background: #f0f0f0; padding: 10px;">
+// Paste this into the browser console on localhost:5173
+(async () => {
+  const MiniZinc = await import('/node_modules/.vite/deps/minizinc.js?v=xxx');
+  // Actually that won't work either. Let's use the global.
+})();
+</pre>
+<p>Better approach: add a test button to the app itself.</p>
+</body>
+</html>

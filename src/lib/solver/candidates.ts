@@ -1,6 +1,6 @@
 import type { PuzzleState, LoadedRule } from '$lib/model/types';
 import { compilePuzzle, type ValueChoice } from './compiler';
-import { solveAllTimed, solveForSolution } from './worker';
+import { solveAllTimed, solveForSolution, solveTrueCandidates } from './worker';
 import {
 	buildVariableSpaces,
 	initUnknowns,
@@ -70,6 +70,11 @@ export async function findTrueCandidates(
 	solver: string = 'gecode',
 	config: CandidateConfig = DEFAULT_CONFIG,
 ): Promise<CandidateResult> {
+	// Native Chuffed path: solver handles novelty internally, one flatten only
+	if (solver === 'chuffed') {
+		return findTrueCandidatesNative(puzzle, rules, onProgress, signal);
+	}
+
 	// [profile] compile timing
 	const compileT0 = performance.now();
 	const normalModel = compilePuzzle(puzzle, rules);
@@ -300,6 +305,56 @@ export async function findTrueCandidates(
 		'novelty.harvest': { ms: noveltyHarvestMs | 0 },
 		'novelty.overhead': { ms: noveltyOverheadMs | 0 },
 		total: { ms: (t2 - t0) | 0 },
+	});
+
+	return buildCandidateResult(spaces, possibles);
+}
+
+/**
+ * Native Chuffed true-candidates path.
+ * Compiles the model once, Chuffed handles novelty elimination internally.
+ * Solutions stream out and are harvested by the same variable-space logic.
+ */
+async function findTrueCandidatesNative(
+	puzzle: PuzzleState,
+	rules: LoadedRule[],
+	onProgress?: (progress: CandidateProgress) => void,
+	signal?: AbortSignal,
+): Promise<CandidateResult> {
+	const t0 = performance.now();
+	const model = compilePuzzle(puzzle, rules);
+	const compileMs = performance.now() - t0;
+
+	const spaces = buildVariableSpaces(puzzle);
+	const { possibles, allCandidates } = initUnknowns(spaces);
+	const totalUnknowns = allCandidates.length;
+
+	onProgress?.({ phase: 'sampling', completed: 0, total: totalUnknowns });
+
+	let solutionCount = 0;
+	const solveT0 = performance.now();
+
+	const result = await solveTrueCandidates(
+		model,
+		(sol) => {
+			solutionCount++;
+			harvestSolutionGeneric(spaces, possibles, sol);
+			const resolved = totalUnknowns - allCandidates.filter(
+				(c) => !possibles.get(c.key)?.has(c.value)
+			).length;
+			onProgress?.({ phase: 'eliminating', completed: resolved, total: totalUnknowns });
+		},
+		signal,
+	);
+
+	const solveMs = performance.now() - solveT0;
+	const totalMs = performance.now() - t0;
+
+	console.log(`[candidates native] ${solutionCount} solutions, completed=${result.completed}`);
+	console.table({
+		'js.compile': { ms: compileMs | 0 },
+		'chuffed.solve': { ms: solveMs | 0 },
+		total: { ms: totalMs | 0 },
 	});
 
 	return buildCandidateResult(spaces, possibles);
