@@ -3,7 +3,7 @@
 	"name": "Palindrome",
 	"description": "Cells on the line read the same forwards and backwards",
 	"categories": ["sudoku", "line"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

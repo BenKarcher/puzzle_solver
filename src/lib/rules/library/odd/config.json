@@ -3,7 +3,7 @@
 	"name": "Odd",
 	"description": "The given cell(s) must contain odd numbers",
 	"categories": ["sudoku", "parity"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

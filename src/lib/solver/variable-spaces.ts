@@ -2,7 +2,7 @@ import type { PuzzleState } from '$lib/model/types';
 import type { CandidateResult } from './candidates';
 
 /** Decision variable field names in MiniZinc solution objects */
-export const DECISION_VARS = ['grid', 'shaded', 'border_h', 'border_v', 'line_h', 'line_v'] as const;
+export const DECISION_VARS = ['digits', 'values', 'shaded', 'border_h', 'border_v', 'line_h', 'line_v'] as const;
 
 export interface VariableSpace {
 	/** Key prefix for maps, e.g. "grid", "shaded", "border_h" */
@@ -47,14 +47,14 @@ export function buildVariableSpaces(puzzle: PuzzleState): VariableSpace[] {
 		const domain: number[] = [];
 		for (let v = min; v <= max; v++) domain.push(v);
 		spaces.push({
-			keyPrefix: 'grid',
-			solField: 'grid',
+			keyPrefix: 'digits',
+			solField: 'digits',
 			resultField: 'numbers',
 			numRows: rows,
 			numCols: cols,
 			domain,
 			resultKind: 'numeric',
-			mznExpr: (r, c) => `grid[${r + 1},${c + 1}]`,
+			mznExpr: (r, c) => `digits[${r + 1},${c + 1}]`,
 			getGiven: (r, c) => {
 				const cell = puzzle.cells[r][c];
 				return cell.numberIsGiven && cell.number !== null ? cell.number : undefined;
@@ -72,6 +72,26 @@ export function buildVariableSpaces(puzzle: PuzzleState): VariableSpace[] {
 				if (!cell.numberIsGiven) { cell.number = null; cell.pencilMarks = []; }
 			},
 		});
+
+		if (puzzle.solutionSpaces.modifiers.enabled) {
+			const m = puzzle.solutionSpaces.modifiers;
+			const valueDomain: number[] = [];
+			for (let v = m.min; v <= m.max; v++) valueDomain.push(v);
+			spaces.push({
+				keyPrefix: 'values',
+				solField: 'values',
+				resultField: 'values',
+				numRows: rows,
+				numCols: cols,
+				domain: valueDomain,
+				resultKind: 'numeric',
+				mznExpr: (r, c) => `values[${r + 1},${c + 1}]`,
+				getGiven: () => undefined,
+				applyValue: () => {},
+				applyMarks: () => {},
+				clearValue: () => {},
+			});
+		}
 	}
 
 	if (puzzle.solutionSpaces.shading.enabled) {

@@ -3,7 +3,7 @@ import type { PuzzleState } from '$lib/model/types';
 /**
  * Negative constraint for ratio (black) dots.
  * For every pair of orthogonally adjacent cells that does NOT have a
- * ratio-dot instance, emit: constraint not (grid[r1,c1] = 2*grid[r2,c2] \/ grid[r2,c2] = 2*grid[r1,c1]);
+ * ratio-dot instance, emit: constraint not (values[r1,c1] = 2*values[r2,c2] \/ values[r2,c2] = 2*values[r1,c1]);
  */
 export default function generate(puzzle: PuzzleState): string[] {
 	const { rows, cols } = puzzle.dimensions;
@@ -27,7 +27,7 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r},${c + 1}`;
 			if (!dotted.has(key)) {
 				lines.push(
-					`constraint not (grid[${r + 1},${c + 1}] = 2*grid[${r + 1},${c + 2}] \\/ grid[${r + 1},${c + 2}] = 2*grid[${r + 1},${c + 1}]);`
+					`constraint not (values[${r + 1},${c + 1}] = 2*values[${r + 1},${c + 2}] \\/ values[${r + 1},${c + 2}] = 2*values[${r + 1},${c + 1}]);`
 				);
 			}
 		}
@@ -39,7 +39,7 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r + 1},${c}`;
 			if (!dotted.has(key)) {
 				lines.push(
-					`constraint not (grid[${r + 1},${c + 1}] = 2*grid[${r + 2},${c + 1}] \\/ grid[${r + 2},${c + 1}] = 2*grid[${r + 1},${c + 1}]);`
+					`constraint not (values[${r + 1},${c + 1}] = 2*values[${r + 2},${c + 1}] \\/ values[${r + 2},${c + 1}] = 2*values[${r + 1},${c + 1}]);`
 				);
 			}
 		}

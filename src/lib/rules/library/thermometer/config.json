@@ -3,7 +3,7 @@
 	"name": "Thermometer",
 	"description": "Numbers must strictly increase from the bulb to the tip of the thermometer",
 	"categories": ["sudoku", "comparison", "line"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

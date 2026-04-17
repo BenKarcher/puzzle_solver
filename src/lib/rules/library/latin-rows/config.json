@@ -3,6 +3,7 @@
 	"name": "Latin Rows",
 	"description": "Each row contains all different numbers",
 	"categories": ["latin-square", "sudoku", "uniqueness"],
-	"requiredSpaces": ["numbers"],
-	"scope": "global"
+	"requiredSpaces": ["digits"],
+	"scope": "global",
+	"imports": ["alldifferent"]
 }

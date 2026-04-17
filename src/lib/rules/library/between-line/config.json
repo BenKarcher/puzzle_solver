@@ -3,7 +3,7 @@
 	"name": "Between Line",
 	"description": "All cells between the endpoints must have values strictly between the endpoint values",
 	"categories": ["sudoku", "line"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

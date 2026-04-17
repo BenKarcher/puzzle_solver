@@ -1,4 +1,5 @@
 import type { PuzzleState, LoadedRule, RuleConfig, RuleInstance } from '$lib/model/types';
+import { getImportSnippet } from '$lib/rules/registry';
 
 /**
  * Compile a PuzzleState + loaded rules into a complete MiniZinc model string.
@@ -21,7 +22,13 @@ export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?
 	// 2. Variable declarations
 	if (puzzle.solutionSpaces.numbers.enabled) {
 		const { min, max } = puzzle.solutionSpaces.numbers;
-		lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: grid;`);
+		lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: digits;`);
+		if (puzzle.solutionSpaces.modifiers.enabled) {
+			const m = puzzle.solutionSpaces.modifiers;
+			lines.push(`array[1..rows, 1..cols] of var ${m.min}..${m.max}: values;`);
+		} else {
+			lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: values = digits;`);
+		}
 	}
 
 	if (puzzle.solutionSpaces.shading.enabled) {
@@ -48,8 +55,14 @@ export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?
 
 	lines.push('');
 
-	// 3. Region data
-	if (hasRegions(puzzle)) {
+	// 3. Collect which rules are actually used (needed to decide whether to emit region data)
+	const usedRuleIds = new Set<string>([
+		...puzzle.globalRules,
+		...puzzle.localRules.map((inst) => inst.ruleId)
+	]);
+
+	// 4. Region / position data — only emitted if some rule requires it
+	if (needsSpace(usedRuleIds, rules, 'regions')) {
 		const regionData = puzzle.cells
 			.map((row) => row.map((c) => c.regionId).join(', '))
 			.join(',\n  ');
@@ -57,7 +70,20 @@ export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?
 		lines.push('');
 	}
 
-	// 4. Given constraints
+	if (needsSpace(usedRuleIds, rules, 'positions')) {
+		lines.push(`array[1..rows, 1..cols] of int: position = array2d(1..rows, 1..cols, [\n  ${compilePositions(puzzle)}\n]);`);
+		lines.push('');
+	}
+
+	// 5. Shared imports (deduped, emitted after region data so shared logic can reference `region`)
+	const importLines = collectImports(usedRuleIds, rules);
+	if (importLines.length > 0) {
+		lines.push('% Shared imports');
+		lines.push(...importLines);
+		lines.push('');
+	}
+
+	// 6. Given constraints
 	const givenLines = compileGivens(puzzle);
 	if (givenLines.length > 0) {
 		lines.push('% Givens');
@@ -65,13 +91,7 @@ export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?
 		lines.push('');
 	}
 
-	// 5. Collect which rules are actually used
-	const usedRuleIds = new Set<string>([
-		...puzzle.globalRules,
-		...puzzle.localRules.map((inst) => inst.ruleId)
-	]);
-
-	// 6. Include rule predicate definitions / constraints from .mzn files
+	// 7. Include rule predicate definitions / constraints from .mzn files
 	const includedMzn = new Set<string>();
 	for (const ruleId of usedRuleIds) {
 		const rule = rules.find((r) => r.config.id === ruleId);
@@ -128,8 +148,13 @@ export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?
 		const searchAnnotations: string[] = [];
 		if (puzzle.solutionSpaces.numbers.enabled) {
 			searchAnnotations.push(
-				`int_search([grid[i,j] | i in 1..rows, j in 1..cols], first_fail, ${vc})`
+				`int_search([digits[i,j] | i in 1..rows, j in 1..cols], first_fail, ${vc})`
 			);
+			if (puzzle.solutionSpaces.modifiers.enabled) {
+				searchAnnotations.push(
+					`int_search([values[i,j] | i in 1..rows, j in 1..cols], first_fail, ${vc})`
+				);
+			}
 		}
 		if (puzzle.solutionSpaces.shading.enabled) {
 			searchAnnotations.push(
@@ -158,6 +183,27 @@ export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?
 	return lines.join('\n');
 }
 
+function collectImports(usedRuleIds: Set<string>, rules: LoadedRule[]): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const ruleId of usedRuleIds) {
+		const rule = rules.find((r) => r.config.id === ruleId);
+		const imports = rule?.config.imports;
+		if (!imports) continue;
+		for (const name of imports) {
+			if (seen.has(name)) continue;
+			seen.add(name);
+			const snippet = getImportSnippet(name);
+			if (snippet === undefined) {
+				console.warn(`[compiler] unknown import "${name}" requested by rule "${ruleId}"`);
+				continue;
+			}
+			out.push(snippet.trimEnd());
+		}
+	}
+	return out;
+}
+
 function compileGivens(puzzle: PuzzleState): string[] {
 	const lines: string[] = [];
 	const { rows, cols } = puzzle.dimensions;
@@ -169,7 +215,7 @@ function compileGivens(puzzle: PuzzleState): string[] {
 			const mznC = c + 1;
 
 			if (puzzle.solutionSpaces.numbers.enabled && cell.numberIsGiven && cell.number !== null) {
-				lines.push(`constraint grid[${mznR},${mznC}] = ${cell.number};`);
+				lines.push(`constraint digits[${mznR},${mznC}] = ${cell.number};`);
 			}
 
 			if (puzzle.solutionSpaces.shading.enabled && cell.shadedIsGiven && cell.shaded !== null) {
@@ -242,9 +288,16 @@ function generatePredicateCall(
 		if (config.groups?.constraints.hasValue && group.value === null) return null;
 
 		// Pass cell arrays for each solution space the rule requires
-		if (reqSpaces.includes('numbers')) {
+		if (reqSpaces.includes('digits')) {
 			const cellRefs = group.cells
-				.map((c) => `grid[${c.row + 1},${c.col + 1}]`)
+				.map((c) => `digits[${c.row + 1},${c.col + 1}]`)
+				.join(', ');
+			args.push(`[${cellRefs}]`);
+		}
+
+		if (reqSpaces.includes('values')) {
+			const cellRefs = group.cells
+				.map((c) => `values[${c.row + 1},${c.col + 1}]`)
 				.join(', ');
 			args.push(`[${cellRefs}]`);
 		}
@@ -327,7 +380,13 @@ export function compilePuzzleForCheck(
 	// 2. Variable declarations (same as normal)
 	if (puzzle.solutionSpaces.numbers.enabled) {
 		const { min, max } = puzzle.solutionSpaces.numbers;
-		lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: grid;`);
+		lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: digits;`);
+		if (puzzle.solutionSpaces.modifiers.enabled) {
+			const m = puzzle.solutionSpaces.modifiers;
+			lines.push(`array[1..rows, 1..cols] of var ${m.min}..${m.max}: values;`);
+		} else {
+			lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: values = digits;`);
+		}
 	}
 	if (puzzle.solutionSpaces.shading.enabled) {
 		lines.push('array[1..rows, 1..cols] of var bool: shaded;');
@@ -346,12 +405,37 @@ export function compilePuzzleForCheck(
 	}
 	lines.push('');
 
-	// 3. Region data
-	if (hasRegions(puzzle)) {
+	// Determine which rules to include (needed for region + import collection)
+	const globalRules = filterRules
+		? puzzle.globalRules.filter((id) => onlyGlobalRules?.has(id))
+		: puzzle.globalRules;
+	const localRules = filterRules
+		? puzzle.localRules.filter((inst) => onlyLocalInstances?.has(inst.id))
+		: puzzle.localRules;
+	const usedRuleIds = new Set<string>([
+		...globalRules,
+		...localRules.map((inst) => inst.ruleId)
+	]);
+
+	// 3. Region / position data — only emitted if some rule requires it
+	if (needsSpace(usedRuleIds, rules, 'regions')) {
 		const regionData = puzzle.cells
 			.map((row) => row.map((c) => c.regionId).join(', '))
 			.join(',\n  ');
 		lines.push(`array[1..rows, 1..cols] of int: region = array2d(1..rows, 1..cols, [\n  ${regionData}\n]);`);
+		lines.push('');
+	}
+
+	if (needsSpace(usedRuleIds, rules, 'positions')) {
+		lines.push(`array[1..rows, 1..cols] of int: position = array2d(1..rows, 1..cols, [\n  ${compilePositions(puzzle)}\n]);`);
+		lines.push('');
+	}
+
+	// Shared imports (deduped, emitted after region data so shared logic can reference `region`)
+	const importLines = collectImports(usedRuleIds, rules);
+	if (importLines.length > 0) {
+		lines.push('% Shared imports');
+		lines.push(...importLines);
 		lines.push('');
 	}
 
@@ -362,7 +446,7 @@ export function compilePuzzleForCheck(
 			for (let c = 0; c < cols; c++) {
 				const val = puzzle.cells[r][c].number;
 				if (val !== null) {
-					lines.push(`constraint grid[${r + 1},${c + 1}] = ${val};`);
+					lines.push(`constraint digits[${r + 1},${c + 1}] = ${val};`);
 				}
 			}
 		}
@@ -404,19 +488,6 @@ export function compilePuzzleForCheck(
 		}
 	}
 	lines.push('');
-
-	// 5. Determine which rules to include
-	const globalRules = filterRules
-		? puzzle.globalRules.filter((id) => onlyGlobalRules?.has(id))
-		: puzzle.globalRules;
-	const localRules = filterRules
-		? puzzle.localRules.filter((inst) => onlyLocalInstances?.has(inst.id))
-		: puzzle.localRules;
-
-	const usedRuleIds = new Set<string>([
-		...globalRules,
-		...localRules.map((inst) => inst.ruleId)
-	]);
 
 	// 6. Include rule predicate definitions
 	const includedMzn = new Set<string>();
@@ -460,11 +531,26 @@ export function compilePuzzleForCheck(
 	return lines.join('\n');
 }
 
-function hasRegions(puzzle: PuzzleState): boolean {
-	for (const row of puzzle.cells) {
-		for (const cell of row) {
-			if (cell.regionId !== 0) return true;
-		}
+function needsSpace(usedRuleIds: Set<string>, rules: LoadedRule[], space: string): boolean {
+	for (const ruleId of usedRuleIds) {
+		const rule = rules.find((r) => r.config.id === ruleId);
+		if (rule?.config.requiredSpaces.includes(space as never)) return true;
 	}
 	return false;
+}
+
+function compilePositions(puzzle: PuzzleState): string {
+	const { rows, cols } = puzzle.dimensions;
+	const counter = new Map<number, number>();
+	const positions: number[][] = [];
+	for (let r = 0; r < rows; r++) {
+		positions[r] = [];
+		for (let c = 0; c < cols; c++) {
+			const regionId = puzzle.cells[r][c].regionId;
+			const count = (counter.get(regionId) ?? 0) + 1;
+			counter.set(regionId, count);
+			positions[r][c] = count;
+		}
+	}
+	return positions.map((row) => row.join(', ')).join(',\n  ');
 }

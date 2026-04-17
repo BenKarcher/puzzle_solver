@@ -3,6 +3,6 @@
 	"name": "Global Number Equals Edges",
 	"description": "Every cell's number equals the count of adjacent true borders",
 	"categories": ["borders", "numbers"],
-	"requiredSpaces": ["numbers", "borders"],
+	"requiredSpaces": ["values", "borders"],
 	"scope": "global"
 }

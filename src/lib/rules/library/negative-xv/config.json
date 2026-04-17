@@ -3,7 +3,7 @@
 	"name": "Negative XV",
 	"description": "All pairs summing to 10 or 5 must be marked with an X or V. Unmarked pairs cannot sum to 10 or 5.",
 	"categories": ["sudoku", "arithmetic", "xv", "negative"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "global",
 	"groups": null
 }

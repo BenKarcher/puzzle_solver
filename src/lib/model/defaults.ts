@@ -29,6 +29,7 @@ export function createDefaultEdge(): EdgeValue {
 export function createDefaultSolutionSpaces(): SolutionSpaces {
 	return {
 		numbers: { enabled: true, min: 1, max: 9 },
+		modifiers: { enabled: false, min: 1, max: 18 },
 		shading: { enabled: false },
 		borders: { enabled: false },
 		lines: { enabled: false, maxLinesPerPair: 1 }

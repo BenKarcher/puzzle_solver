@@ -1,2 +1,2 @@
-predicate consecutive_pairs(array[int] of var int: cells) =
-    abs(cells[1] - cells[2]) = 1;
+predicate consecutive_pairs(array[int] of var int: digits) =
+    abs(digits[1] - digits[2]) = 1;

@@ -16,10 +16,17 @@
 	function getAvailableRules(): RuleConfig[] {
 		const enabledSpaces = new Set<string>();
 		const spaces = puzzleStore.puzzle.solutionSpaces;
-		if (spaces.numbers.enabled) enabledSpaces.add('numbers');
+		if (spaces.numbers.enabled) {
+			enabledSpaces.add('digits');
+			enabledSpaces.add('values');
+		}
+		if (spaces.modifiers.enabled) enabledSpaces.add('modifier');
 		if (spaces.shading.enabled) enabledSpaces.add('shading');
 		if (spaces.borders.enabled) enabledSpaces.add('borders');
 		if (spaces.lines.enabled) enabledSpaces.add('lines');
+		// 'regions' and 'positions' are compiler-only tags (no puzzle-setup toggle) — always satisfied
+		enabledSpaces.add('regions');
+		enabledSpaces.add('positions');
 
 		const filtered = ruleConfigs.filter((rule) => {
 			if (!rule.requiredSpaces.every((s) => enabledSpaces.has(s))) return false;

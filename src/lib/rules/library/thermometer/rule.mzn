@@ -1,2 +1,2 @@
-predicate thermometer(array[int] of var int: cells) =
-    forall(i in 1..length(cells)-1)(cells[i] < cells[i+1]);
+predicate thermometer(array[int] of var int: values) =
+    forall(i in 1..length(values)-1)(values[i] < values[i+1]);

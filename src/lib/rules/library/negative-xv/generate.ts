@@ -27,10 +27,10 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r},${c + 1}`;
 			if (!covered.has(key)) {
 				lines.push(
-					`constraint grid[${r + 1},${c + 1}] + grid[${r + 1},${c + 2}] != 10;`
+					`constraint values[${r + 1},${c + 1}] + values[${r + 1},${c + 2}] != 10;`
 				);
 				lines.push(
-					`constraint grid[${r + 1},${c + 1}] + grid[${r + 1},${c + 2}] != 5;`
+					`constraint values[${r + 1},${c + 1}] + values[${r + 1},${c + 2}] != 5;`
 				);
 			}
 		}
@@ -42,10 +42,10 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r + 1},${c}`;
 			if (!covered.has(key)) {
 				lines.push(
-					`constraint grid[${r + 1},${c + 1}] + grid[${r + 2},${c + 1}] != 10;`
+					`constraint values[${r + 1},${c + 1}] + values[${r + 2},${c + 1}] != 10;`
 				);
 				lines.push(
-					`constraint grid[${r + 1},${c + 1}] + grid[${r + 2},${c + 1}] != 5;`
+					`constraint values[${r + 1},${c + 1}] + values[${r + 2},${c + 1}] != 5;`
 				);
 			}
 		}

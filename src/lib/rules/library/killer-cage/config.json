@@ -3,7 +3,7 @@
 	"name": "Killer Cage",
 	"description": "Cells in a cage sum to the given total with no repeats",
 	"categories": ["sudoku", "arithmetic", "cage"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits", "values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

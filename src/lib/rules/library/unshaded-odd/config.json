@@ -3,6 +3,6 @@
   "name": "Unshaded Odd",
   "description": "Unshaded (green) cells must contain odd numbers",
   "categories": ["shading", "parity"],
-  "requiredSpaces": ["numbers", "shading"],
+  "requiredSpaces": ["digits", "shading"],
   "scope": "global"
 }

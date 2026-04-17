@@ -1,9 +1,9 @@
 {
 	"id": "consecutive-pairs",
 	"name": "Consecutive Pair",
-	"description": "Two orthogonally adjacent cells differ by exactly 1 (white dot / kropki)",
+	"description": "Two orthogonally adjacent cells values differ by exactly 1 (white dot / kropki)",
 	"categories": ["sudoku", "arithmetic", "kropki", "edge-clue"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

@@ -3,6 +3,7 @@
 	"name": "Latin Regions",
 	"description": "Each region contains all different numbers",
 	"categories": ["latin-square", "sudoku", "uniqueness"],
-	"requiredSpaces": ["numbers"],
-	"scope": "global"
+	"requiredSpaces": ["digits", "regions"],
+	"scope": "global",
+	"imports": ["alldifferent"]
 }

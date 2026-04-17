@@ -3,7 +3,7 @@
 	"name": "X (Sum 10)",
 	"description": "Two orthogonally adjacent cells must sum to 10",
 	"categories": ["sudoku", "arithmetic", "xv", "edge-clue"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

@@ -3,6 +3,6 @@
 	"name": "Non-Consecutive",
 	"description": "No two orthogonally adjacent cells may contain consecutive numbers (differ by exactly 1). Note: This applies globally to ALL adjacent pairs. Different from Negative Kropki, which only applies to pairs without a white dot.",
 	"categories": ["sudoku", "arithmetic"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits"],
 	"scope": "global"
 }

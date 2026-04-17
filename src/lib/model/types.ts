@@ -37,12 +37,21 @@ export interface LineConfig {
 	maxLinesPerPair: number;
 }
 
+export interface ModifierConfig {
+	enabled: boolean;
+	min: number;
+	max: number;
+}
+
 export interface SolutionSpaces {
 	numbers: NumberPlacementConfig;
+	modifiers: ModifierConfig;
 	shading: ShadingConfig;
 	borders: BorderConfig;
 	lines: LineConfig;
 }
+
+export type RequiredSpace = 'digits' | 'values' | 'modifier' | 'regions' | 'positions' | 'shading' | 'borders' | 'lines';
 
 // ---- Cell data ----
 
@@ -79,7 +88,7 @@ export interface RuleConfig {
 	name: string;
 	description: string;
 	categories: string[];
-	requiredSpaces: Array<'numbers' | 'shading' | 'borders' | 'lines'>;
+	requiredSpaces: RequiredSpace[];
 	scope: 'global' | 'local';
 	groups?: {
 		min: number;
@@ -88,6 +97,8 @@ export interface RuleConfig {
 	};
 	/** Override predicate name (used by custom rules) */
 	predicateName?: string;
+	/** Shared MiniZinc snippets (from src/lib/rules/imports/) to prepend once before constraints */
+	imports?: string[];
 }
 
 export interface RuleGroup {
@@ -155,7 +166,7 @@ export interface CustomRuleDefinition {
 	description: string;
 	scope: 'global' | 'local';
 	mzn: string;
-	requiredSpaces: Array<'numbers' | 'shading' | 'borders' | 'lines'>;
+	requiredSpaces: RequiredSpace[];
 	groups?: {
 		min: number;
 		max: number;

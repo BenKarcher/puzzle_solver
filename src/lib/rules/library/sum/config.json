@@ -3,7 +3,7 @@
 	"name": "Sum",
 	"description": "Cells sum to the given total (repeats allowed)",
 	"categories": ["arithmetic", "cage"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

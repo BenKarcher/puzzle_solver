@@ -1,0 +1,8 @@
+{
+	"id": "no-2x2-shading",
+	"name": "No 2x2 Shading",
+	"description": "No 2x2 fully shaded or unshaded area",
+	"categories": ["shading"],
+	"requiredSpaces": ["shading"],
+	"scope": "global"
+}

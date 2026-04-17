@@ -1,2 +1,2 @@
-predicate even(array[int] of var int: cells) =
-    forall(i in index_set(cells))(cells[i] mod 2 = 0);
+predicate even(array[int] of var int: values) =
+    forall(i in index_set(values))(values[i] mod 2 = 0);

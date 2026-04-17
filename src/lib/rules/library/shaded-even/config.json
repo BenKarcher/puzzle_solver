@@ -3,6 +3,6 @@
   "name": "Shaded Even",
   "description": "Shaded (black) cells must contain even numbers",
   "categories": ["shading", "parity"],
-  "requiredSpaces": ["numbers", "shading"],
+  "requiredSpaces": ["digits", "shading"],
   "scope": "global"
 }

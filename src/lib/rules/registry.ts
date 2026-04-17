@@ -12,6 +12,18 @@ const renderModules = import.meta.glob('./library/*/render.ts', { eager: true })
 // Lazily load generate modules
 const generateModules = import.meta.glob('./library/*/generate.ts', { eager: true });
 
+// Shared MiniZinc import snippets (prepended once per compilation when any rule requests them)
+const importModules = import.meta.glob('./imports/*.mzn', { eager: true, query: '?raw', import: 'default' });
+const importMap = new Map<string, string>();
+for (const [path, content] of Object.entries(importModules)) {
+	const match = path.match(/\.\/imports\/([^/]+)\.mzn$/);
+	if (match) importMap.set(match[1], content as string);
+}
+
+export function getImportSnippet(name: string): string | undefined {
+	return importMap.get(name);
+}
+
 interface ConfigModule {
 	default: RuleConfig;
 }

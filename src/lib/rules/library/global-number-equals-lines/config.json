@@ -3,6 +3,6 @@
 	"name": "Global Number Equals Lines",
 	"description": "Every cell's number equals the count of lines coming out of it",
 	"categories": ["lines", "numbers"],
-	"requiredSpaces": ["numbers", "lines"],
+	"requiredSpaces": ["values", "lines"],
 	"scope": "global"
 }

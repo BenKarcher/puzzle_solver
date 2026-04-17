@@ -3,8 +3,9 @@
 	"name": "Extra Region",
 	"description": "Cells in the group must all contain different numbers",
 	"categories": ["sudoku", "uniqueness", "cage"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits"],
 	"scope": "local",
+	"imports": ["alldifferent"],
 	"groups": {
 		"min": 1,
 		"max": 1,

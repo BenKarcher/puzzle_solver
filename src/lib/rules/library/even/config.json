@@ -1,9 +1,9 @@
 {
 	"id": "even",
 	"name": "Even",
-	"description": "The given cell(s) must contain even numbers",
+	"description": "The given cell(s) must contain even values",
 	"categories": ["sudoku", "parity"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

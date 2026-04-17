@@ -3,7 +3,7 @@
 	"name": "Negative Ratio (Black Dots)",
 	"description": "All ratio-2 adjacent pairs must be marked with a black dot. If no dot, cells do NOT have ratio 2.",
 	"categories": ["sudoku", "arithmetic", "kropki", "negative"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "global",
 	"groups": null
 }

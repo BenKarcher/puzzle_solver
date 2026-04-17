@@ -3,7 +3,7 @@
 	"name": "Number Equals Edges",
 	"description": "The number in each selected cell equals the count of adjacent true borders",
 	"categories": ["borders", "numbers"],
-	"requiredSpaces": ["numbers", "borders"],
+	"requiredSpaces": ["values", "borders"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

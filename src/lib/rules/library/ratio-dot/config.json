@@ -3,7 +3,7 @@
 	"name": "Ratio Dot (Black Dot)",
 	"description": "One cell is exactly double the other (black dot / kropki)",
 	"categories": ["sudoku", "arithmetic", "kropki", "edge-clue"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

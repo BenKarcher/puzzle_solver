@@ -3,7 +3,7 @@
 	"name": "German Whisper Line",
 	"description": "Consecutive cells on the line must differ by at least 5",
 	"categories": ["sudoku", "line"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["values"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

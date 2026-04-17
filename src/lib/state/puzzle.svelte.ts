@@ -452,6 +452,19 @@ class PuzzleStore {
 		const { favoriteRules, ...state } = parsed;
 		// Backward compatibility: older saves may lack customRules
 		if (!state.customRules) state.customRules = [];
+		// Backward compatibility: older saves may lack the modifiers solution space
+		if (!state.solutionSpaces.modifiers) {
+			state.solutionSpaces.modifiers = { enabled: false, min: 1, max: 18 };
+		}
+		// Backward compatibility: legacy 'numbers' tag in custom rules → ['digits', 'values']
+		for (const cr of state.customRules) {
+			const rs = cr.requiredSpaces as string[];
+			if (rs.includes('numbers')) {
+				cr.requiredSpaces = rs.flatMap((s) =>
+					s === 'numbers' ? ['digits', 'values'] : [s]
+				) as typeof cr.requiredSpaces;
+			}
+		}
 		// Backward compatibility: older saves may lack linePencilMarks on edges
 		for (const edgeRow of state.hEdges) {
 			for (const edge of edgeRow) {

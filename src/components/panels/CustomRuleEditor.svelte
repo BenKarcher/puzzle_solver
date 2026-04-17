@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { nanoid } from 'nanoid';
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
-	import type { CustomRuleDefinition } from '$lib/model/types';
+	import type { CustomRuleDefinition, RequiredSpace } from '$lib/model/types';
 
 	interface Props {
 		editingRule?: CustomRuleDefinition | null;
@@ -18,7 +18,9 @@
 	let description = $state(initial?.description ?? '');
 	let scope = $state<'global' | 'local'>(initial?.scope ?? 'global');
 	let mzn = $state(initial?.mzn ?? '');
-	let reqNumbers = $state(initial?.requiredSpaces.includes('numbers') ?? true);
+	let reqDigits = $state(initial?.requiredSpaces.includes('digits') ?? true);
+	let reqValues = $state(initial?.requiredSpaces.includes('values') ?? false);
+	let reqModifier = $state(initial?.requiredSpaces.includes('modifier') ?? false);
 	let reqShading = $state(initial?.requiredSpaces.includes('shading') ?? false);
 	let reqBorders = $state(initial?.requiredSpaces.includes('borders') ?? false);
 	let reqLines = $state(initial?.requiredSpaces.includes('lines') ?? false);
@@ -40,8 +42,11 @@
 		const args: string[] = [];
 		for (let i = 0; i < groupCount; i++) {
 			const suffix = groupCount > 1 ? `_${i + 1}` : '';
-			if (reqNumbers) {
-				args.push(`array[int] of var int: cells${suffix}`);
+			if (reqDigits) {
+				args.push(`array[int] of var int: digits${suffix}`);
+			}
+			if (reqValues) {
+				args.push(`array[int] of var int: values${suffix}`);
 			}
 			if (reqShading) {
 				args.push(`array[int] of var bool: shaded${suffix}`);
@@ -59,9 +64,11 @@
 		return `predicate ${predicateName}(${args.join(', ')})`;
 	});
 
-	function buildRequiredSpaces(): Array<'numbers' | 'shading' | 'borders' | 'lines'> {
-		const spaces: Array<'numbers' | 'shading' | 'borders' | 'lines'> = [];
-		if (reqNumbers) spaces.push('numbers');
+	function buildRequiredSpaces(): RequiredSpace[] {
+		const spaces: RequiredSpace[] = [];
+		if (reqDigits) spaces.push('digits');
+		if (reqValues) spaces.push('values');
+		if (reqModifier) spaces.push('modifier');
 		if (reqShading) spaces.push('shading');
 		if (reqBorders) spaces.push('borders');
 		if (reqLines) spaces.push('lines');
@@ -137,7 +144,9 @@
 
 		<fieldset class="form-row">
 			<legend>Required Solution Spaces</legend>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqNumbers} /> Numbers</label>
+			<label class="checkbox"><input type="checkbox" bind:checked={reqDigits} /> Digits</label>
+			<label class="checkbox"><input type="checkbox" bind:checked={reqValues} /> Values</label>
+			<label class="checkbox"><input type="checkbox" bind:checked={reqModifier} /> Modifier</label>
 			<label class="checkbox"><input type="checkbox" bind:checked={reqShading} /> Shading</label>
 			<label class="checkbox"><input type="checkbox" bind:checked={reqBorders} /> Borders</label>
 			<label class="checkbox"><input type="checkbox" bind:checked={reqLines} /> Lines</label>

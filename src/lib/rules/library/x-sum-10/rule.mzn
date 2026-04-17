@@ -1,2 +1,2 @@
-predicate x_sum_10(array[int] of var int: cells) =
-    cells[1] + cells[2] = 10;
+predicate x_sum_10(array[int] of var int: values) =
+    values[1] + values[2] = 10;

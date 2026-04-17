@@ -41,6 +41,20 @@
 		});
 	}
 
+	function toggleModifiers() {
+		const current = puzzleStore.puzzle.solutionSpaces.modifiers;
+		puzzleStore.updateSolutionSpaces({
+			modifiers: { ...current, enabled: !current.enabled }
+		});
+	}
+
+	function setModifierRange(min: number, max: number) {
+		const current = puzzleStore.puzzle.solutionSpaces.modifiers;
+		puzzleStore.updateSolutionSpaces({
+			modifiers: { ...current, min, max }
+		});
+	}
+
 	function toggleShading() {
 		const current = puzzleStore.puzzle.solutionSpaces.shading;
 		puzzleStore.updateSolutionSpaces({
@@ -136,6 +150,45 @@
 				</label>
 			</div>
 		</div>
+	{/if}
+
+	{#if puzzleStore.puzzle.solutionSpaces.numbers.enabled}
+		<label class="checkbox-row">
+			<input
+				type="checkbox"
+				checked={puzzleStore.puzzle.solutionSpaces.modifiers.enabled}
+				onchange={toggleModifiers}
+			/>
+			Cell Modifiers
+		</label>
+		{#if puzzleStore.puzzle.solutionSpaces.modifiers.enabled}
+			<div class="indent">
+				<div class="row">
+					<label>
+						Min
+						<input
+							type="number"
+							value={puzzleStore.puzzle.solutionSpaces.modifiers.min}
+							onchange={(e) => setModifierRange(
+								parseInt((e.target as HTMLInputElement).value),
+								puzzleStore.puzzle.solutionSpaces.modifiers.max
+							)}
+						/>
+					</label>
+					<label>
+						Max
+						<input
+							type="number"
+							value={puzzleStore.puzzle.solutionSpaces.modifiers.max}
+							onchange={(e) => setModifierRange(
+								puzzleStore.puzzle.solutionSpaces.modifiers.min,
+								parseInt((e.target as HTMLInputElement).value)
+							)}
+						/>
+					</label>
+				</div>
+			</div>
+		{/if}
 	{/if}
 
 	<label class="checkbox-row">

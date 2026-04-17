@@ -3,7 +3,7 @@
 	"name": "Clone",
 	"description": "The two groups contain identical values in the same order",
 	"categories": ["sudoku"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits"],
 	"scope": "local",
 	"groups": {
 		"min": 2,

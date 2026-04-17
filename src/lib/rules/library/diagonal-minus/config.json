@@ -1,8 +1,9 @@
 {
 	"id": "diagonal-minus",
 	"name": "Diagonal Minus",
-	"description": "No repeated numbers on the main diagonal (top-left to bottom-right)",
+	"description": "No repeated digits on the main diagonal (top-left to bottom-right)",
 	"categories": ["sudoku", "uniqueness"],
-	"requiredSpaces": ["numbers"],
-	"scope": "global"
+	"requiredSpaces": ["digits"],
+	"scope": "global",
+	"imports": ["alldifferent"]
 }

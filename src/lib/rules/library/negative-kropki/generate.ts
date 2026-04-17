@@ -31,8 +31,8 @@ export default function generate(puzzle: PuzzleState): string[] {
 		for (let c = 0; c < cols - 1; c++) {
 			const key = `${r},${c}-${r},${c + 1}`;
 			if (!covered.has(key)) {
-				const a = `grid[${r + 1},${c + 1}]`;
-				const b = `grid[${r + 1},${c + 2}]`;
+				const a = `values[${r + 1},${c + 1}]`;
+				const b = `values[${r + 1},${c + 2}]`;
 				lines.push(
 					`constraint not (abs(${a} - ${b}) = 1 \\/ ${a} = 2*${b} \\/ ${b} = 2*${a});`
 				);
@@ -45,8 +45,8 @@ export default function generate(puzzle: PuzzleState): string[] {
 		for (let c = 0; c < cols; c++) {
 			const key = `${r},${c}-${r + 1},${c}`;
 			if (!covered.has(key)) {
-				const a = `grid[${r + 1},${c + 1}]`;
-				const b = `grid[${r + 2},${c + 1}]`;
+				const a = `values[${r + 1},${c + 1}]`;
+				const b = `values[${r + 2},${c + 1}]`;
 				lines.push(
 					`constraint not (abs(${a} - ${b}) = 1 \\/ ${a} = 2*${b} \\/ ${b} = 2*${a});`
 				);

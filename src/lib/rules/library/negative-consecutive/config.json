@@ -3,7 +3,7 @@
 	"name": "Negative Consecutive (White Dots)",
 	"description": "All consecutive adjacent pairs must be marked with a white dot. If no dot, cells do NOT differ by 1.",
 	"categories": ["sudoku", "arithmetic", "kropki", "negative"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits"],
 	"scope": "global",
 	"groups": null
 }

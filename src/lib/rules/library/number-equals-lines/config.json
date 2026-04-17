@@ -3,7 +3,7 @@
 	"name": "Number Equals Lines",
 	"description": "The number in each selected cell equals the count of lines coming out of it",
 	"categories": ["lines", "numbers"],
-	"requiredSpaces": ["numbers", "lines"],
+	"requiredSpaces": ["values", "lines"],
 	"scope": "local",
 	"groups": {
 		"min": 1,

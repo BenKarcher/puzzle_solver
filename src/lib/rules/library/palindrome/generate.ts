@@ -19,7 +19,7 @@ export default function generate(_puzzle: PuzzleState, instance?: RuleInstance):
 		const left = cells[i];
 		const right = cells[n - 1 - i];
 		constraints.push(
-			`constraint grid[${left.row + 1},${left.col + 1}] = grid[${right.row + 1},${right.col + 1}];`
+			`constraint digits[${left.row + 1},${left.col + 1}] = digits[${right.row + 1},${right.col + 1}];`
 		);
 	}
 

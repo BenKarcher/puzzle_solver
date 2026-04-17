@@ -10,8 +10,10 @@ import {
 } from './variable-spaces';
 
 export interface CandidateResult {
-	/** For each cell [row][col], the set of possible values */
+	/** For each cell [row][col], the set of possible digit values */
 	numbers?: number[][][];
+	/** For each cell [row][col], the set of possible arithmetic values (when modifiers enabled) */
+	values?: number[][][];
 	/** For each cell [row][col], true/false/both */
 	shading?: ('true' | 'false' | 'both' | null)[][];
 	/** Border candidates for horizontal/vertical edges */

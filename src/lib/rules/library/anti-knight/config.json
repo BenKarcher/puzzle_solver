@@ -3,6 +3,6 @@
 	"name": "Anti-Knight",
 	"description": "No repeated numbers a knight's move apart",
 	"categories": ["sudoku", "uniqueness"],
-	"requiredSpaces": ["numbers"],
+	"requiredSpaces": ["digits"],
 	"scope": "global"
 }
