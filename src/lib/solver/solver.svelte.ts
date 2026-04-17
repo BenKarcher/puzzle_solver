@@ -63,7 +63,11 @@ class SolverStore {
 	private syncToReactive(): void {
 		this.totalSolutionCount = this._count;
 		if (this._stored.length > this.solutions.length) {
+			const wasEmpty = this.solutions.length === 0;
 			this.solutions = [...this._stored];
+			if (wasEmpty && this.solutions.length > 0) {
+				puzzleStore.applySolution(this.solutions[0]);
+			}
 		}
 	}
 
