@@ -428,6 +428,11 @@ export function handleKeyDown(e: KeyboardEvent): void {
 	// Don't handle keys when an overlay (e.g. custom rule editor) is open
 	if (ui.customRuleEditorOpen) return;
 
+	// Don't steal keys from focused text inputs — let the user type in
+	// search bars, name fields, etc. Cells remain selected.
+	const active = document.activeElement;
+	if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+
 	// Escape: deselect rule instance
 	if (e.key === 'Escape') {
 		if (ui.selectedRuleInstanceId) {

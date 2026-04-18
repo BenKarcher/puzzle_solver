@@ -58,16 +58,25 @@
 	}
 
 	function addLocalRule(rule: RuleConfig) {
+		// Source cells: current selection, or (fallback) cells of the currently
+		// edited rule-instance group (those appear highlighted too).
+		let sourceCells = selection.cells;
+		if (sourceCells.length === 0 && ui.selectedRuleInstanceId) {
+			const editingInst = puzzleStore.puzzle.localRules.find(
+				(r) => r.id === ui.selectedRuleInstanceId
+			);
+			sourceCells = editingInst?.groups[ui.selectedGroupIndex]?.cells ?? [];
+		}
+
 		const groupCount = rule.groups?.min ?? 1;
 		const instanceId = puzzleStore.addRuleInstance(rule.id, groupCount);
 
-		// Pre-populate group 0 with current selection if size is valid
-		const sel = selection.cells;
-		if (sel.length > 0 && rule.groups) {
+		// Pre-populate group 0 with source cells if size is valid
+		if (sourceCells.length > 0 && rule.groups) {
 			const { minSize, maxSize } = rule.groups.constraints;
-			const validSize = sel.length >= minSize && (maxSize === null || sel.length <= maxSize);
+			const validSize = sourceCells.length >= minSize && (maxSize === null || sourceCells.length <= maxSize);
 			if (validSize) {
-				for (const cell of sel) {
+				for (const cell of sourceCells) {
 					puzzleStore.addCellToGroup(instanceId, 0, cell);
 				}
 				selection.clearSelection();
@@ -75,6 +84,9 @@
 		}
 
 		ui.selectRuleInstance(instanceId);
+		if (rule.groups?.constraints.hasValue) {
+			ui.pendingValueFocus = instanceId;
+		}
 	}
 
 	function duplicateLocalRule(instanceRuleId: string) {

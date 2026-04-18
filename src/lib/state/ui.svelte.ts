@@ -9,6 +9,8 @@ class UIStore {
 	customRuleEditorOpen = $state(false);
 	customRuleEditing = $state<CustomRuleDefinition | null>(null);
 	favoriteRules = $state<Set<string>>(new Set());
+	/** One-shot: when set, the value input for this (instanceId, groupIndex=0) autofocuses on render */
+	pendingValueFocus = $state<string | null>(null);
 
 	setMode(mode: AppMode): void {
 		this.mode = mode;

@@ -10,6 +10,20 @@
 
 	let { instance, config }: Props = $props();
 
+	let firstValueInput = $state<HTMLInputElement | null>(null);
+
+	$effect(() => {
+		if (
+			ui.pendingValueFocus === instance.id &&
+			firstValueInput &&
+			config.groups?.constraints.hasValue
+		) {
+			firstValueInput.focus();
+			firstValueInput.select();
+			ui.pendingValueFocus = null;
+		}
+	});
+
 	const GROUP_COLORS = ['rgba(66, 135, 245, 0.3)', 'rgba(245, 166, 66, 0.3)', 'rgba(76, 175, 80, 0.3)', 'rgba(156, 39, 176, 0.3)'];
 
 	function isGroupInvalid(group: { cells: { row: number; col: number }[]; value: number | null }): boolean {
@@ -84,12 +98,22 @@
 				{#if config.groups?.constraints.hasValue}
 					<label class="value-input">
 						{config.groups?.constraints.valueLabel ?? 'Value'}:
-						<input
-							type="number"
-							value={group.value ?? ''}
-							oninput={(e) => updateGroupValue(gi, (e.target as HTMLInputElement).value)}
-							onclick={(e) => e.stopPropagation()}
-						/>
+						{#if gi === 0}
+							<input
+								type="number"
+								value={group.value ?? ''}
+								bind:this={firstValueInput}
+								oninput={(e) => updateGroupValue(gi, (e.target as HTMLInputElement).value)}
+								onclick={(e) => e.stopPropagation()}
+							/>
+						{:else}
+							<input
+								type="number"
+								value={group.value ?? ''}
+								oninput={(e) => updateGroupValue(gi, (e.target as HTMLInputElement).value)}
+								onclick={(e) => e.stopPropagation()}
+							/>
+						{/if}
 					</label>
 				{/if}
 			</div>
