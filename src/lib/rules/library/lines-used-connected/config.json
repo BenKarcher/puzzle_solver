@@ -4,5 +4,6 @@
 	"description": "All cells that have at least one line must form a single connected group",
 	"categories": ["lines", "connectivity"],
 	"requiredSpaces": ["lines"],
-	"scope": "global"
+	"scope": "global",
+	"imports": ["cell-graph", "cell-lines"]
 }

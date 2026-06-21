@@ -4,5 +4,6 @@
 	"description": "Every cell's number equals the count of adjacent true borders",
 	"categories": ["borders", "numbers"],
 	"requiredSpaces": ["values", "borders"],
-	"scope": "global"
+	"scope": "global",
+	"imports": ["cell-borders"]
 }

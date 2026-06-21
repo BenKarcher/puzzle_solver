@@ -4,5 +4,6 @@
 	"description": "Every cell's number equals the count of lines coming out of it",
 	"categories": ["lines", "numbers"],
 	"requiredSpaces": ["values", "lines"],
-	"scope": "global"
+	"scope": "global",
+	"imports": ["cell-lines"]
 }

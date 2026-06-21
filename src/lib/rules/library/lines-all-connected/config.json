@@ -4,5 +4,6 @@
 	"description": "All cells must be connected via lines",
 	"categories": ["lines", "connectivity"],
 	"requiredSpaces": ["lines"],
-	"scope": "global"
+	"scope": "global",
+	"imports": ["cell-graph"]
 }

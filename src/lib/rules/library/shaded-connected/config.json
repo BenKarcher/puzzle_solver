@@ -4,5 +4,6 @@
 	"description": "All shaded cells must form a single orthogonally connected group",
 	"categories": ["shading", "connectivity"],
 	"requiredSpaces": ["shading"],
-	"scope": "global"
+	"scope": "global",
+	"imports": ["cell-graph"]
 }

@@ -7,6 +7,7 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+src/tests/__screenshots__
 
 # OS
 .DS_Store
@@ -21,6 +22,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+.vitest-attachments
 
 # Solver build (keep build.sh, ignore cloned repos + build artifacts)
 /solver-build/emsdk/
