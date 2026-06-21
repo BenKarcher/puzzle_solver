@@ -1,5 +1,1 @@
-- Xs look same as givens and solving marks (make solver Xs gray instead)
-- Line mode has the bug where you can end up in no mode, copy the logic from number and shading that bumps you to a mode if you have none in setup
-- lines on their own don't produce Xs as solver output only if you have both modes selected
-- In minizinc code line_h seems to correspond to vertical lines and vice versa
-- enumerating solutions for line mode produces identical solutions, not sure if this is a rendering or a solver issue
+seperate solve/set undo buffer. adding pencil marks and especially clicking through solutionsor clicking solve should not populate the undo buffer for givens

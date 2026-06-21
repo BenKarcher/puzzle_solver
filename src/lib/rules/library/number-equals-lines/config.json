@@ -2,16 +2,20 @@
 	"id": "number-equals-lines",
 	"name": "Number Equals Lines",
 	"description": "The number in each selected cell equals the count of lines coming out of it",
-	"categories": ["lines", "numbers"],
-	"requiredSpaces": ["values", "lines"],
+	"categories": [
+		"lines",
+		"numbers"
+	],
+	"requiredSpaces": [
+		"values",
+		"lines"
+	],
 	"scope": "local",
-	"groups": {
-		"min": 1,
-		"max": 1,
-		"constraints": {
+	"groups": [
+		{
 			"minSize": 1,
 			"maxSize": null,
 			"hasValue": false
 		}
-	}
+	]
 }

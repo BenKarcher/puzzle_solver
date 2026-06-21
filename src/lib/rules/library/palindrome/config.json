@@ -2,16 +2,19 @@
 	"id": "palindrome",
 	"name": "Palindrome",
 	"description": "Cells on the line read the same forwards and backwards",
-	"categories": ["sudoku", "line"],
-	"requiredSpaces": ["digits"],
+	"categories": [
+		"sudoku",
+		"line"
+	],
+	"requiredSpaces": [
+		"digits"
+	],
 	"scope": "local",
-	"groups": {
-		"min": 1,
-		"max": 1,
-		"constraints": {
+	"groups": [
+		{
 			"minSize": 2,
 			"maxSize": null,
 			"hasValue": false
 		}
-	}
+	]
 }

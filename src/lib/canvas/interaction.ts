@@ -3,6 +3,16 @@ import type { GridLayout } from './GridRenderer';
 import { puzzleStore } from '$lib/state/puzzle.svelte';
 import { selection } from '$lib/state/selection.svelte';
 import { ui } from '$lib/state/ui.svelte';
+import { getRuleById } from '$lib/rules/registry';
+
+/** True when the currently-edited rule group is cell-less (maxSize === 0). */
+function selectedGroupIsCellless(): boolean {
+	if (!ui.selectedRuleInstanceId) return false;
+	const inst = puzzleStore.puzzle.localRules.find((r) => r.id === ui.selectedRuleInstanceId);
+	if (!inst) return false;
+	const cfg = getRuleById(inst.ruleId)?.config.groups?.[ui.selectedGroupIndex];
+	return cfg?.maxSize === 0;
+}
 
 // Track the shading value being painted during a drag
 let shadingDragValue: boolean | null = null;
@@ -273,8 +283,9 @@ export function handleCanvasMouseDown(
 		return;
 	}
 
-	// Rule group editing takes priority over all other tools
-	if (mode === 'setting' && ui.selectedRuleInstanceId) {
+	// Rule group editing takes priority over all other tools.
+	// Cell-less groups (maxSize === 0) fall through to normal selection.
+	if (mode === 'setting' && ui.selectedRuleInstanceId && !selectedGroupIsCellless()) {
 		puzzleStore.toggleCellInGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
 		return;
 	}

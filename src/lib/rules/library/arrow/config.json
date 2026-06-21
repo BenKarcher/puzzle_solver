@@ -2,16 +2,24 @@
 	"id": "arrow",
 	"name": "Arrow",
 	"description": "The digits along the arrow sum to the number in the circle (bulb). The bulb cells are read as a multi-digit number in the order they were selected (e.g., cells with values 1,3 = 13).",
-	"categories": ["sudoku", "arithmetic"],
-	"requiredSpaces": ["values"],
+	"categories": [
+		"sudoku",
+		"arithmetic"
+	],
+	"requiredSpaces": [
+		"values"
+	],
 	"scope": "local",
-	"groups": {
-		"min": 2,
-		"max": 2,
-		"constraints": {
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": false
+		},
+		{
 			"minSize": 1,
 			"maxSize": null,
 			"hasValue": false
 		}
-	}
+	]
 }

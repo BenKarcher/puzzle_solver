@@ -2,16 +2,19 @@
 	"id": "german-whisper",
 	"name": "German Whisper Line",
 	"description": "Consecutive cells on the line must differ by at least 5",
-	"categories": ["sudoku", "line"],
-	"requiredSpaces": ["values"],
+	"categories": [
+		"sudoku",
+		"line"
+	],
+	"requiredSpaces": [
+		"values"
+	],
 	"scope": "local",
-	"groups": {
-		"min": 1,
-		"max": 1,
-		"constraints": {
+	"groups": [
+		{
 			"minSize": 2,
 			"maxSize": null,
 			"hasValue": false
 		}
-	}
+	]
 }

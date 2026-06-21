@@ -78,6 +78,7 @@ export interface EdgeValue {
 
 export interface RuleGroupConfig {
 	minSize: number;
+	/** null = unbounded; 0 = cell-less (value-only group, skipped in predicate cell args) */
 	maxSize: number | null;
 	hasValue: boolean;
 	valueLabel?: string;
@@ -90,11 +91,8 @@ export interface RuleConfig {
 	categories: string[];
 	requiredSpaces: RequiredSpace[];
 	scope: 'global' | 'local';
-	groups?: {
-		min: number;
-		max: number;
-		constraints: RuleGroupConfig;
-	};
+	/** Per-group config; length = number of groups. Each group has independent constraints. */
+	groups?: RuleGroupConfig[];
 	/** Override predicate name (used by custom rules) */
 	predicateName?: string;
 	/** Shared MiniZinc snippets (from src/lib/rules/imports/) to prepend once before constraints */
@@ -164,16 +162,15 @@ export interface CustomRuleDefinition {
 	id: string;
 	name: string;
 	description: string;
+	categories?: string[];
 	scope: 'global' | 'local';
 	mzn: string;
 	requiredSpaces: RequiredSpace[];
-	groups?: {
-		min: number;
-		max: number;
-		constraints: RuleGroupConfig;
-	};
+	groups?: RuleGroupConfig[];
 	/** For local rules: the predicate name used in the MiniZinc code */
 	predicateName?: string;
+	/** Shared import snippets (from src/lib/rules/imports/) to prepend once before constraints */
+	imports?: string[];
 }
 
 // ---- Top-level puzzle state ----

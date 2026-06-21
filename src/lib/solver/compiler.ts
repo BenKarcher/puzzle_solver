@@ -274,78 +274,81 @@ function generatePredicateCall(
 	instance: RuleInstance,
 	puzzle: PuzzleState
 ): string | null {
-	if (instance.groups.length === 0) return null;
+	if (!config.groups || instance.groups.length === 0) return null;
 
 	// Convert config.id to valid MiniZinc identifier (or use explicit override)
 	const predicateName = config.predicateName ?? config.id.replace(/-/g, '_');
 
 	const reqSpaces = config.requiredSpaces;
 	const args: string[] = [];
-	for (const group of instance.groups) {
-		if (group.cells.length === 0) continue;
+	for (let gi = 0; gi < instance.groups.length; gi++) {
+		const group = instance.groups[gi];
+		const groupCfg = config.groups[gi];
+		if (!groupCfg) continue;
+		const isCellless = groupCfg.maxSize === 0;
 
-		// If this group requires a value but doesn't have one, skip the whole constraint
-		if (config.groups?.constraints.hasValue && group.value === null) return null;
+		// Validation: reject call if we can't produce a valid constraint
+		if (groupCfg.hasValue && group.value === null) return null;
+		if (!isCellless && groupCfg.minSize > 0 && group.cells.length < groupCfg.minSize) return null;
 
-		// Pass cell arrays for each solution space the rule requires
-		if (reqSpaces.includes('digits')) {
-			const cellRefs = group.cells
-				.map((c) => `digits[${c.row + 1},${c.col + 1}]`)
-				.join(', ');
-			args.push(`[${cellRefs}]`);
-		}
-
-		if (reqSpaces.includes('values')) {
-			const cellRefs = group.cells
-				.map((c) => `values[${c.row + 1},${c.col + 1}]`)
-				.join(', ');
-			args.push(`[${cellRefs}]`);
-		}
-
-		if (reqSpaces.includes('shading')) {
-			const shadingRefs = group.cells
-				.map((c) => `shaded[${c.row + 1},${c.col + 1}]`)
-				.join(', ');
-			args.push(`[${shadingRefs}]`);
-		}
-
-		if (reqSpaces.includes('borders')) {
-			const { rows, cols } = puzzle.dimensions;
-			const edgeRefs: string[] = [];
-			for (const cell of group.cells) {
-				const r = cell.row;
-				const c = cell.col;
-				const mznR = r + 1;
-				const mznC = c + 1;
-				// All border edges always exist (including outer boundary)
-				const top = `border_h[${mznR},${mznC}]`;
-				const bottom = `border_h[${mznR + 1},${mznC}]`;
-				const left = `border_v[${mznR},${mznC}]`;
-				const right = `border_v[${mznR},${mznC + 1}]`;
-				edgeRefs.push(top, right, bottom, left);
+		// For cell-less groups: skip cell arrays, only emit value if present.
+		// For normal groups: emit cell arrays per requiredSpaces, then value.
+		if (!isCellless && group.cells.length > 0) {
+			if (reqSpaces.includes('digits')) {
+				const cellRefs = group.cells
+					.map((c) => `digits[${c.row + 1},${c.col + 1}]`)
+					.join(', ');
+				args.push(`[${cellRefs}]`);
 			}
-			const n = group.cells.length;
-			args.push(`array2d(1..${n}, 1..4, [${edgeRefs.join(', ')}])`);
-		}
 
-		if (reqSpaces.includes('lines')) {
-			const { rows, cols } = puzzle.dimensions;
-			const edgeRefs: string[] = [];
-			for (const cell of group.cells) {
-				const r = cell.row;
-				const c = cell.col;
-				// Lines are interior only — boundary cells get constant 0
-				const top = r > 0 ? `line_v[${r},${c + 1}]` : '0';
-				const bottom = r < rows - 1 ? `line_v[${r + 1},${c + 1}]` : '0';
-				const left = c > 0 ? `line_h[${r + 1},${c}]` : '0';
-				const right = c < cols - 1 ? `line_h[${r + 1},${c + 1}]` : '0';
-				edgeRefs.push(top, right, bottom, left);
+			if (reqSpaces.includes('values')) {
+				const cellRefs = group.cells
+					.map((c) => `values[${c.row + 1},${c.col + 1}]`)
+					.join(', ');
+				args.push(`[${cellRefs}]`);
 			}
-			const n = group.cells.length;
-			args.push(`array2d(1..${n}, 1..4, [${edgeRefs.join(', ')}])`);
+
+			if (reqSpaces.includes('shading')) {
+				const shadingRefs = group.cells
+					.map((c) => `shaded[${c.row + 1},${c.col + 1}]`)
+					.join(', ');
+				args.push(`[${shadingRefs}]`);
+			}
+
+			if (reqSpaces.includes('borders')) {
+				const edgeRefs: string[] = [];
+				for (const cell of group.cells) {
+					const mznR = cell.row + 1;
+					const mznC = cell.col + 1;
+					const top = `border_h[${mznR},${mznC}]`;
+					const bottom = `border_h[${mznR + 1},${mznC}]`;
+					const left = `border_v[${mznR},${mznC}]`;
+					const right = `border_v[${mznR},${mznC + 1}]`;
+					edgeRefs.push(top, right, bottom, left);
+				}
+				const n = group.cells.length;
+				args.push(`array2d(1..${n}, 1..4, [${edgeRefs.join(', ')}])`);
+			}
+
+			if (reqSpaces.includes('lines')) {
+				const { rows, cols } = puzzle.dimensions;
+				const edgeRefs: string[] = [];
+				for (const cell of group.cells) {
+					const r = cell.row;
+					const c = cell.col;
+					// Lines are interior only — boundary cells get constant 0
+					const top = r > 0 ? `line_v[${r},${c + 1}]` : '0';
+					const bottom = r < rows - 1 ? `line_v[${r + 1},${c + 1}]` : '0';
+					const left = c > 0 ? `line_h[${r + 1},${c}]` : '0';
+					const right = c < cols - 1 ? `line_h[${r + 1},${c + 1}]` : '0';
+					edgeRefs.push(top, right, bottom, left);
+				}
+				const n = group.cells.length;
+				args.push(`array2d(1..${n}, 1..4, [${edgeRefs.join(', ')}])`);
+			}
 		}
 
-		if (config.groups?.constraints.hasValue) {
+		if (groupCfg.hasValue) {
 			args.push(`${group.value}`);
 		}
 	}

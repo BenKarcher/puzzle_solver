@@ -2,16 +2,23 @@
 	"id": "clone",
 	"name": "Clone",
 	"description": "The two groups contain identical values in the same order",
-	"categories": ["sudoku"],
-	"requiredSpaces": ["digits"],
+	"categories": [
+		"sudoku"
+	],
+	"requiredSpaces": [
+		"digits"
+	],
 	"scope": "local",
-	"groups": {
-		"min": 2,
-		"max": 2,
-		"constraints": {
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": false
+		},
+		{
 			"minSize": 1,
 			"maxSize": null,
 			"hasValue": false
 		}
-	}
+	]
 }

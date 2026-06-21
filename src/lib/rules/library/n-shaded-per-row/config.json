@@ -1,0 +1,24 @@
+{
+	"id": "n-shaded-per-row",
+	"name": "N shaded per row",
+	"description": "Each row contains N shaded cells",
+	"categories": [
+		"latin-square"
+	],
+	"requiredSpaces": [
+		"shading"
+	],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 0,
+			"maxSize": 0,
+			"hasValue": true,
+			"valueLabel": "N"
+		}
+	],
+	"predicateName": "n_shaded_per_row",
+	"imports": [
+		"alldifferent"
+	]
+}

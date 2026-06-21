@@ -68,12 +68,12 @@
 			sourceCells = editingInst?.groups[ui.selectedGroupIndex]?.cells ?? [];
 		}
 
-		const groupCount = rule.groups?.min ?? 1;
-		const instanceId = puzzleStore.addRuleInstance(rule.id, groupCount);
+		const instanceId = puzzleStore.addRuleInstance(rule.id);
 
-		// Pre-populate group 0 with source cells if size is valid
-		if (sourceCells.length > 0 && rule.groups) {
-			const { minSize, maxSize } = rule.groups.constraints;
+		// Pre-populate group 0 with source cells if its config allows cells + size is valid
+		const firstGroup = rule.groups?.[0];
+		if (sourceCells.length > 0 && firstGroup && firstGroup.maxSize !== 0) {
+			const { minSize, maxSize } = firstGroup;
 			const validSize = sourceCells.length >= minSize && (maxSize === null || sourceCells.length <= maxSize);
 			if (validSize) {
 				for (const cell of sourceCells) {
@@ -84,7 +84,7 @@
 		}
 
 		ui.selectRuleInstance(instanceId);
-		if (rule.groups?.constraints.hasValue) {
+		if (firstGroup?.hasValue) {
 			ui.pendingValueFocus = instanceId;
 		}
 	}
@@ -160,7 +160,7 @@
 			>
 				<span class="rule-name">{config.name}</span>
 				{#each instance.groups as group, gi}
-					{#if config.groups?.constraints.hasValue && group.value !== null}
+					{#if config.groups?.[gi]?.hasValue && group.value !== null}
 						<span class="group-value">({group.value})</span>
 					{/if}
 				{/each}

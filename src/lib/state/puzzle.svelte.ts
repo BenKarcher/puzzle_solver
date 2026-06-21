@@ -282,9 +282,11 @@ class PuzzleStore {
 
 	// ---- Local rules ----
 
-	addRuleInstance(ruleId: string, groupCount: number): string {
+	addRuleInstance(ruleId: string): string {
 		this.pushHistory();
 		const id = nanoid();
+		const rule = getRuleById(ruleId);
+		const groupCount = rule?.config.groups?.length ?? 1;
 		const groups: RuleGroup[] = Array.from({ length: groupCount }, () => ({
 			cells: [],
 			value: null
@@ -306,9 +308,10 @@ class PuzzleStore {
 		if (!group) return;
 		const exists = group.cells.some((c) => c.row === coord.row && c.col === coord.col);
 		if (exists) return;
-		// Enforce maxSize if the rule config specifies one
+		// Enforce per-group maxSize; maxSize === 0 means cell-less (reject entirely)
 		const rule = getRuleById(instance.ruleId);
-		const maxSize = rule?.config.groups?.constraints.maxSize;
+		const maxSize = rule?.config.groups?.[groupIndex]?.maxSize;
+		if (maxSize === 0) return;
 		if (maxSize !== null && maxSize !== undefined && group.cells.length >= maxSize) return;
 		this.pushHistory();
 		group.cells = [...group.cells, { ...coord }];
@@ -463,6 +466,14 @@ class PuzzleStore {
 				cr.requiredSpaces = rs.flatMap((s) =>
 					s === 'numbers' ? ['digits', 'values'] : [s]
 				) as typeof cr.requiredSpaces;
+			}
+			// Legacy groups: { min, max, constraints } → RuleGroupConfig[]
+			const g = cr.groups as unknown as
+				| { min: number; max: number; constraints: import('$lib/model/types').RuleGroupConfig }
+				| import('$lib/model/types').RuleGroupConfig[]
+				| undefined;
+			if (g && !Array.isArray(g) && 'constraints' in g) {
+				cr.groups = Array.from({ length: g.max }, () => ({ ...g.constraints }));
 			}
 		}
 		// Backward compatibility: older saves may lack linePencilMarks on edges

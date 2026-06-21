@@ -24,6 +24,10 @@ export function getImportSnippet(name: string): string | undefined {
 	return importMap.get(name);
 }
 
+export function getAvailableImports(): string[] {
+	return [...importMap.keys()].sort();
+}
+
 interface ConfigModule {
 	default: RuleConfig;
 }
@@ -99,11 +103,12 @@ function customToLoaded(def: CustomRuleDefinition): LoadedRule {
 		id: def.id,
 		name: def.name,
 		description: def.description,
-		categories: ['custom'],
+		categories: def.categories?.length ? ['custom', ...def.categories] : ['custom'],
 		requiredSpaces: def.requiredSpaces,
 		scope: def.scope,
 		groups: def.groups,
-		predicateName: def.predicateName
+		predicateName: def.predicateName,
+		imports: def.imports,
 	};
 	return { config, mzn: def.mzn };
 }
