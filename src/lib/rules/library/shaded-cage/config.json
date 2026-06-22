@@ -1,0 +1,22 @@
+{
+	"id": "shaded-cage",
+	"name": "Shaded Cage",
+	"description": "Exactly N cells in the cage must be shaded",
+	"categories": [
+		"shading",
+		"cage",
+		"counting"
+	],
+	"requiredSpaces": [
+		"shading"
+	],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": true,
+			"valueLabel": "Shaded"
+		}
+	]
+}
