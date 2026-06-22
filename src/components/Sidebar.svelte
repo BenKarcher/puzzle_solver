@@ -56,25 +56,35 @@
 	{:else if ui.mode === 'setting'}
 		{@const selectedInstance = getSelectedInstance()}
 		{@const selectedConfig = getSelectedConfig()}
+		{@const noRules = puzzleStore.puzzle.globalRules.length === 0 && puzzleStore.puzzle.localRules.length === 0}
 
 		{#if selectedInstance && selectedConfig}
 			<RuleInstance instance={selectedInstance} config={selectedConfig} />
 			<hr />
 		{/if}
+
+		{#if noRules}
+			<div class="no-rules-banner">
+				<strong>No rules active.</strong> The solver will accept <em>any</em> numbers in the configured range.
+				Add constraints below to make this a real puzzle.
+			</div>
+		{/if}
+
 		<RuleLibrary {ruleConfigs} />
 		<hr />
 		<SolverPanel />
 	{:else if ui.mode === 'solving'}
 		<div class="panel">
-			<h3>Solving Mode</h3>
-			<p class="hint">Enter values into non-given cells. Use Ctrl+number for pencil marks.</p>
-			<button class="btn check-btn" onclick={handleCheckSolution}>Check Solution</button>
+			<h3>Solve Mode</h3>
+			<p class="hint">Click cells and type numbers to fill in your solution. Use <kbd>Ctrl+number</kbd> for pencil marks.</p>
+			<button class="btn check-btn" onclick={handleCheckSolution}>Check My Solution</button>
 			{#if solverStore.checkResult}
 				<div class="check-result check-{solverStore.checkResult.status}">
 					{solverStore.checkResult.message}
 				</div>
 			{/if}
-			<button class="btn" onclick={() => puzzleStore.clearSolveEntries()}>Clear Solution</button>
+			<button class="btn" onclick={() => puzzleStore.clearSolveEntries()}>Clear Entries</button>
+			<p class="hint" style="margin-top: 10px;">To have the computer solve it instead, switch to <strong>Design</strong> mode and use the Solver panel.</p>
 		</div>
 	{/if}
 </aside>
@@ -96,6 +106,25 @@
 	.hint {
 		font-size: 12px;
 		color: #888;
+		line-height: 1.4;
+	}
+
+	kbd {
+		background: #f0f0f0;
+		border: 1px solid #ccc;
+		border-radius: 3px;
+		padding: 0 3px;
+		font-size: 11px;
+	}
+
+	.no-rules-banner {
+		margin: 8px 12px;
+		padding: 8px 10px;
+		background: #fff8e1;
+		border: 1px solid #ffe082;
+		border-radius: 4px;
+		font-size: 12px;
+		color: #5d4037;
 		line-height: 1.4;
 	}
 

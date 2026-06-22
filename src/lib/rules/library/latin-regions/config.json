@@ -1,7 +1,7 @@
 {
 	"id": "latin-regions",
-	"name": "Latin Regions",
-	"description": "Each region contains all different numbers",
+	"name": "Sudoku Boxes",
+	"description": "Each region (box) must contain all different numbers (no repeats)",
 	"categories": ["latin-square", "sudoku", "uniqueness"],
 	"requiredSpaces": ["digits", "regions"],
 	"scope": "global",

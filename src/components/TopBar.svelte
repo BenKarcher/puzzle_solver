@@ -5,11 +5,11 @@
 	import { solverStore } from '$lib/solver/solver.svelte';
 	import type { AppMode, ActiveTool } from '$lib/model/types';
 
-	const modes: { value: AppMode; label: string }[] = [
-		{ value: 'grid-setup', label: 'Grid Setup' },
-		{ value: 'region-edit', label: 'Regions' },
-		{ value: 'setting', label: 'Setting' },
-		{ value: 'solving', label: 'Solving' }
+	const modes: { value: AppMode; label: string; tip: string }[] = [
+		{ value: 'grid-setup', label: 'Setup',   tip: 'Configure grid size and what types of values cells can hold' },
+		{ value: 'region-edit', label: 'Regions', tip: 'Draw regions by painting cells — used by Sudoku Boxes and similar rules' },
+		{ value: 'setting',    label: 'Design',  tip: 'Enter given clues and add rules from the library' },
+		{ value: 'solving',    label: 'Solve',   tip: 'Manually solve the puzzle or use the computer solver to verify it' }
 	];
 
 	function hasAnySolutionSpace(): boolean {
@@ -74,12 +74,14 @@
 
 <header class="top-bar">
 	<div class="left">
-		<button class="btn" onclick={newPuzzle}>New</button>
-		<button class="btn" onclick={savePuzzle}>Save</button>
-		<button class="btn" onclick={loadPuzzle}>Load</button>
+		<span class="app-name">Puzzle Solver</span>
 		<span class="separator"></span>
-		<button class="btn" onclick={() => puzzleStore.undo()} disabled={!history.canUndo}>Undo</button>
-		<button class="btn" onclick={() => puzzleStore.redo()} disabled={!history.canRedo}>Redo</button>
+		<button class="btn" onclick={newPuzzle} title="Start a new blank puzzle">New</button>
+		<button class="btn" onclick={savePuzzle} title="Save puzzle to a .json file">Save</button>
+		<button class="btn" onclick={loadPuzzle} title="Load a previously saved .json file">Load</button>
+		<span class="separator"></span>
+		<button class="btn" onclick={() => puzzleStore.undo()} disabled={!history.canUndo} title="Undo (Ctrl+Z)">Undo</button>
+		<button class="btn" onclick={() => puzzleStore.redo()} disabled={!history.canRedo} title="Redo (Ctrl+Y)">Redo</button>
 	</div>
 
 	<div class="center">
@@ -87,6 +89,7 @@
 			class="puzzle-name"
 			type="text"
 			value={puzzleStore.puzzle.name}
+			placeholder="Untitled Puzzle"
 			oninput={(e) => (puzzleStore.puzzle.name = (e.target as HTMLInputElement).value)}
 		/>
 	</div>
@@ -97,6 +100,9 @@
 				class="mode-btn"
 				class:active={ui.mode === mode.value}
 				disabled={!hasAnySolutionSpace() && (mode.value === 'setting' || mode.value === 'solving')}
+				title={!hasAnySolutionSpace() && (mode.value === 'setting' || mode.value === 'solving')
+					? 'Enable at least one variable type in Setup first'
+					: mode.tip}
 				onclick={() => switchMode(mode.value)}
 			>
 				{mode.label}
@@ -114,6 +120,14 @@
 		background: #f5f5f5;
 		border-bottom: 1px solid #ddd;
 		gap: 8px;
+	}
+
+	.app-name {
+		font-size: 14px;
+		font-weight: 700;
+		color: #444;
+		letter-spacing: -0.3px;
+		white-space: nowrap;
 	}
 
 	.left, .right {

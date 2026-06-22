@@ -85,6 +85,18 @@
 </script>
 
 <div class="panel">
+	<!-- App intro card -->
+	<div class="intro-card">
+		<p class="intro-title">Build &amp; verify logic puzzles</p>
+		<ol class="intro-steps">
+			<li><strong>Setup</strong> — choose grid size and variable types</li>
+			<li><strong>Regions</strong> — group cells for box/region rules</li>
+			<li><strong>Design</strong> — enter clue numbers and add rules</li>
+			<li><strong>Solve</strong> — let the solver verify your puzzle</li>
+		</ol>
+		<p class="intro-note">💡 Start with a preset below, or configure from scratch.</p>
+	</div>
+
 	{#if presets.length > 0}
 		<h3>Presets</h3>
 		<div class="presets">
@@ -96,20 +108,23 @@
 		</div>
 	{/if}
 
-	<h3>Grid Dimensions</h3>
+	<h3>Grid Size</h3>
 	<div class="row">
 		<label>
 			Rows
 			<input type="number" bind:value={rowsInput} min="1" max="30" />
 		</label>
 		<label>
-			Cols
+			Columns
 			<input type="number" bind:value={colsInput} min="1" max="30" />
 		</label>
 		<button class="btn" onclick={applyDimensions}>Apply</button>
 	</div>
 
-	<h3>Solution Spaces</h3>
+	<h3>Variable Types
+		<span class="section-tip" title="Choose what kinds of values the solver will assign to cells. You must enable at least one to proceed.">ⓘ</span>
+	</h3>
+	<p class="section-hint">What can each cell hold? Enable the types you need for your puzzle.</p>
 
 	<label class="checkbox-row">
 		<input
@@ -117,7 +132,10 @@
 			checked={puzzleStore.puzzle.solutionSpaces.numbers.enabled}
 			onchange={toggleNumbers}
 		/>
-		Number Placement
+		<span>
+			Numbers
+			<span class="space-hint">— a digit placed in the cell (e.g. 1–9 for sudoku)</span>
+		</span>
 	</label>
 	{#if puzzleStore.puzzle.solutionSpaces.numbers.enabled}
 		<div class="indent">
@@ -159,7 +177,10 @@
 				checked={puzzleStore.puzzle.solutionSpaces.modifiers.enabled}
 				onchange={toggleModifiers}
 			/>
-			Cell Modifiers
+			<span>
+				Secondary Values
+				<span class="space-hint advanced" title="Advanced: a second independent number per cell. When enabled, rules can constrain both the displayed digit and this hidden value separately — used in modifier puzzles where cells carry two distinct numeric attributes.">ⓘ advanced</span>
+			</span>
 		</label>
 		{#if puzzleStore.puzzle.solutionSpaces.modifiers.enabled}
 			<div class="indent">
@@ -187,6 +208,7 @@
 						/>
 					</label>
 				</div>
+				<p class="hint">Rules can reference both the cell's digit and this value independently.</p>
 			</div>
 		{/if}
 	{/if}
@@ -197,7 +219,10 @@
 			checked={puzzleStore.puzzle.solutionSpaces.shading.enabled}
 			onchange={toggleShading}
 		/>
-		Shading
+		<span>
+			Shading
+			<span class="space-hint">— each cell is either shaded or unshaded (e.g. Nurikabe, Hitori)</span>
+		</span>
 	</label>
 
 	<label class="checkbox-row">
@@ -206,7 +231,10 @@
 			checked={puzzleStore.puzzle.solutionSpaces.borders.enabled}
 			onchange={toggleBorders}
 		/>
-		Borders
+		<span>
+			Borders
+			<span class="space-hint">— edges between cells can be on or off (e.g. Slitherlink)</span>
+		</span>
 	</label>
 
 	<label class="checkbox-row">
@@ -215,13 +243,16 @@
 			checked={puzzleStore.puzzle.solutionSpaces.lines.enabled}
 			onchange={toggleLines}
 		/>
-		Lines
+		<span>
+			Lines
+			<span class="space-hint">— edges between cells carry a numeric count (e.g. Hashiwokakero)</span>
+		</span>
 	</label>
 	{#if puzzleStore.puzzle.solutionSpaces.lines.enabled}
 		<div class="indent">
 			<div class="row">
 				<label>
-					Max lines per pair
+					Max bridges per pair
 					<input
 						type="number"
 						value={puzzleStore.puzzle.solutionSpaces.lines.maxLinesPerPair}
@@ -240,19 +271,69 @@
 		padding: 12px;
 	}
 
-	h3 {
-		margin: 12px 0 8px;
+	/* ── Intro card ── */
+	.intro-card {
+		background: #f0f4ff;
+		border: 1px solid #c7d7f7;
+		border-radius: 6px;
+		padding: 10px 12px;
+		margin-bottom: 14px;
+	}
+
+	.intro-title {
+		margin: 0 0 6px;
 		font-size: 13px;
 		font-weight: 600;
+		color: #2c4a8c;
+	}
+
+	.intro-steps {
+		margin: 0 0 6px;
+		padding-left: 18px;
+		font-size: 12px;
+		color: #444;
+		line-height: 1.7;
+	}
+
+	.intro-note {
+		margin: 0;
+		font-size: 11px;
+		color: #666;
+	}
+
+	/* ── Section headers ── */
+	h3 {
+		margin: 14px 0 4px;
+		font-size: 12px;
+		font-weight: 700;
 		color: #555;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		display: flex;
+		align-items: center;
+		gap: 4px;
 	}
 
-	h3:first-child {
+	h3:first-of-type {
 		margin-top: 0;
 	}
 
+	.section-tip {
+		font-size: 12px;
+		color: #999;
+		cursor: help;
+		font-weight: 400;
+		text-transform: none;
+		letter-spacing: 0;
+	}
+
+	.section-hint {
+		font-size: 11px;
+		color: #888;
+		margin: 0 0 6px;
+	}
+
+	/* ── Rows / labels ── */
 	.row {
 		display: flex;
 		gap: 8px;
@@ -275,15 +356,35 @@
 		font-size: 13px;
 	}
 
+	/* ── Checkboxes ── */
 	.checkbox-row {
 		display: flex;
 		flex-direction: row;
-		align-items: center;
+		align-items: flex-start;
 		gap: 6px;
-		padding: 4px 0;
+		padding: 5px 0;
 		font-size: 13px;
 		color: #333;
 		cursor: pointer;
+	}
+
+	.checkbox-row input[type='checkbox'] {
+		margin-top: 2px;
+		flex-shrink: 0;
+	}
+
+	.space-hint {
+		display: block;
+		font-size: 11px;
+		color: #888;
+		font-weight: 400;
+		margin-top: 1px;
+	}
+
+	.space-hint.advanced {
+		color: #b07d00;
+		cursor: help;
+		font-style: italic;
 	}
 
 	.indent {
@@ -291,6 +392,13 @@
 		margin-bottom: 4px;
 	}
 
+	.hint {
+		font-size: 11px;
+		color: #888;
+		margin: 4px 0 0;
+	}
+
+	/* ── Buttons ── */
 	.btn {
 		padding: 4px 12px;
 		border: 1px solid #ccc;

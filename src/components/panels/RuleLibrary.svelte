@@ -58,8 +58,6 @@
 	}
 
 	function addLocalRule(rule: RuleConfig) {
-		// Source cells: current selection, or (fallback) cells of the currently
-		// edited rule-instance group (those appear highlighted too).
 		let sourceCells = selection.cells;
 		if (sourceCells.length === 0 && ui.selectedRuleInstanceId) {
 			const editingInst = puzzleStore.puzzle.localRules.find(
@@ -70,7 +68,6 @@
 
 		const instanceId = puzzleStore.addRuleInstance(rule.id);
 
-		// Pre-populate group 0 with source cells if its config allows cells + size is valid
 		const firstGroup = rule.groups?.[0];
 		if (sourceCells.length > 0 && firstGroup && firstGroup.maxSize !== 0) {
 			const { minSize, maxSize } = firstGroup;
@@ -136,12 +133,13 @@
 	{#each puzzleStore.puzzle.globalRules as ruleId}
 		{@const config = ruleConfigs.find((r) => r.id === ruleId)}
 		{#if config}
-			<div class="active-rule global">
+			<div class="active-rule global" title="Global rule — applies to the entire grid">
+				<span class="rule-badge global-badge" title="Global rule">G</span>
 				<span class="rule-name">{config.name}</span>
 				{#if isCustomRule(ruleId)}
 					<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(ruleId, e)}>&#9998;</button>
 				{/if}
-				<button class="remove-btn" onclick={() => toggleGlobalRule(ruleId)}>×</button>
+				<button class="remove-btn" title="Remove this rule" onclick={() => toggleGlobalRule(ruleId)}>×</button>
 			</div>
 		{/if}
 	{/each}
@@ -153,33 +151,40 @@
 			<div
 				class="active-rule local"
 				class:selected={ui.selectedRuleInstanceId === instance.id}
+				title="Local rule — click to configure which cells it applies to"
 				role="button"
 				tabindex="0"
 				onclick={() => selectInstance(instance.id)}
 				onkeydown={(e) => e.key === 'Enter' && selectInstance(instance.id)}
 			>
+				<span class="rule-badge local-badge" title="Local rule (applies to selected cells)">L</span>
 				<span class="rule-name">{config.name}</span>
 				{#each instance.groups as group, gi}
 					{#if config.groups?.[gi]?.hasValue && group.value !== null}
 						<span class="group-value">({group.value})</span>
 					{/if}
 				{/each}
-				<button class="dup-btn" title="Add another" onclick={(e) => { e.stopPropagation(); duplicateLocalRule(instance.ruleId); }}>+</button>
+				<button class="dup-btn" title="Add another instance of this rule" onclick={(e) => { e.stopPropagation(); duplicateLocalRule(instance.ruleId); }}>+</button>
 				{#if isCustomRule(instance.ruleId)}
 					<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(instance.ruleId, e)}>&#9998;</button>
 				{/if}
-				<button class="remove-btn" onclick={(e) => { e.stopPropagation(); removeLocalInstance(instance.id); }}>×</button>
+				<button class="remove-btn" title="Remove" onclick={(e) => { e.stopPropagation(); removeLocalInstance(instance.id); }}>×</button>
 			</div>
 		{/if}
 	{/each}
 
 	{#if puzzleStore.puzzle.globalRules.length === 0 && puzzleStore.puzzle.localRules.length === 0}
-		<p class="empty">No rules added yet</p>
+		<p class="empty">No rules yet — open the <strong>Rule Library</strong> below to add constraints.</p>
 	{/if}
 	</div>
 
 	<details class="library-section" bind:open={libraryOpen}>
 		<summary class="library-header"><h3>Rule Library</h3></summary>
+
+	<p class="library-hint">
+		<span class="badge-explain"><span class="rule-badge global-badge">G</span> Global — on/off for entire grid</span>
+		<span class="badge-explain"><span class="rule-badge local-badge">L</span> Local — click Add, then select cells</span>
+	</p>
 
 	<input
 		class="search"
@@ -197,22 +202,29 @@
 					title={ui.favoriteRules.has(rule.id) ? 'Unfavorite' : 'Favorite'}
 					onclick={(e) => toggleFavorite(rule.id, e)}
 				>
-					{ui.favoriteRules.has(rule.id) ? '\u2605' : '\u2606'}
+					{ui.favoriteRules.has(rule.id) ? '★' : '☆'}
 				</button>
 				<div class="rule-info">
-					<span class="rule-name">{rule.name}</span>
+					<div class="rule-name-row">
+						<span
+							class="rule-badge {rule.scope === 'global' ? 'global-badge' : 'local-badge'}"
+							title={rule.scope === 'global' ? 'Global: applies to the whole grid' : 'Local: you pick which cells it applies to'}
+						>{rule.scope === 'global' ? 'G' : 'L'}</span>
+						<span class="rule-name">{rule.name}</span>
+					</div>
 					<span class="rule-desc">{rule.description}</span>
 				</div>
 				{#if rule.scope === 'global'}
 					<button
 						class="add-btn"
 						class:active={isGlobalEnabled(rule.id)}
+						title={isGlobalEnabled(rule.id) ? 'Currently enabled — click to disable' : 'Click to enable for the whole grid'}
 						onclick={() => toggleGlobalRule(rule.id)}
 					>
 						{isGlobalEnabled(rule.id) ? 'On' : 'Off'}
 					</button>
 				{:else}
-					<button class="add-btn" onclick={() => addLocalRule(rule)}>Add</button>
+					<button class="add-btn" title="Add, then click cells on the grid to apply it" onclick={() => addLocalRule(rule)}>Add</button>
 				{/if}
 				{#if isCustomRule(rule.id)}
 					<button class="edit-btn" title="Edit definition" onclick={(e) => editCustomRule(rule.id, e)}>&#9998;</button>
@@ -222,7 +234,7 @@
 		{/each}
 	</div>
 
-	<button class="custom-btn" onclick={() => ui.openCustomRuleEditor()}>
+	<button class="custom-btn" title="Write your own constraint using MiniZinc syntax" onclick={() => ui.openCustomRuleEditor()}>
 		+ Custom Constraint
 	</button>
 	</details>
@@ -285,6 +297,30 @@
 		outline: 2px solid #4287f5;
 	}
 
+	/* ── Rule type badges ── */
+	.rule-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		border-radius: 3px;
+		font-size: 10px;
+		font-weight: 700;
+		flex-shrink: 0;
+		cursor: help;
+	}
+
+	.global-badge {
+		background: #c8e6c9;
+		color: #2e7d32;
+	}
+
+	.local-badge {
+		background: #bbdefb;
+		color: #1565c0;
+	}
+
 	.group-value {
 		font-size: 11px;
 		color: #666;
@@ -335,7 +371,7 @@
 		color: #4287f5;
 	}
 
-	/* Library section - collapsible */
+	/* ── Library section — collapsible ── */
 	.library-section {
 		border: none;
 		margin-top: 4px;
@@ -368,6 +404,25 @@
 		margin: 0;
 	}
 
+	.library-hint {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		margin: 0 0 8px;
+		padding: 6px 8px;
+		background: #fafafa;
+		border: 1px solid #eee;
+		border-radius: 4px;
+	}
+
+	.badge-explain {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 11px;
+		color: #666;
+	}
+
 	.rule-list {
 		display: flex;
 		flex-direction: column;
@@ -389,6 +444,14 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.rule-name-row {
+		display: flex;
+		align-items: center;
+		gap: 5px;
 	}
 
 	.rule-name {

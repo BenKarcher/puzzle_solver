@@ -7,7 +7,10 @@
       "Bash(node -e \"const v = require\\('./node_modules/vitest/package.json'\\); console.log\\(v.version\\)\")",
       "Bash(node -e \"const p = require\\('@vitest/browser-playwright'\\); console.log\\(Object.keys\\(p\\)\\)\")",
       "Bash(node -e \"const p = require\\('@vitest/browser-playwright'\\); console.log\\(JSON.stringify\\(p.playwright, null, 2\\)\\)\")",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('globalRules:', d.get\\('globalRules',[]\\)\\); print\\('localRules:', [r.get\\('ruleId'\\) for r in d.get\\('localRules',[]\\)]\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('globalRules:', d.get\\('globalRules',[]\\)\\); print\\('localRules:', [r.get\\('ruleId'\\) for r in d.get\\('localRules',[]\\)]\\)\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)"
     ]
   }
 }

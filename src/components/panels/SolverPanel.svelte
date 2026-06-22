@@ -34,8 +34,8 @@
 		<summary class="solver-header"><h3>Solver</h3></summary>
 
 	<div class="solver-select">
-		<label>
-			Backend:
+		<label title="The constraint solving engine to use. Chuffed is generally faster for most puzzles.">
+			Solver:
 			<select bind:value={solverStore.selectedSolver} disabled={isBusy}>
 				{#each AVAILABLE_SOLVERS as solver}
 					<option value={solver.id}>{solver.name}</option>
@@ -45,14 +45,14 @@
 	</div>
 
 	<div class="actions">
-		<button class="btn" onclick={handleSolve} disabled={isBusy}>
-			{isBusy ? 'Solving...' : 'Solve'}
+		<button class="btn solve-btn" title="Find one valid solution and display it on the grid" onclick={handleSolve} disabled={isBusy}>
+			{isBusy ? 'Solving...' : 'Find a Solution'}
 		</button>
-		<button class="btn" onclick={handleSolveAll} disabled={isBusy}>
+		<button class="btn" title="Enumerate all solutions (up to the max below). Use this to check your puzzle is unique." onclick={handleSolveAll} disabled={isBusy}>
 			Find All Solutions
 		</button>
-		<button class="btn" onclick={handleCandidates} disabled={isBusy}>
-			True Candidates
+		<button class="btn" title="For each empty cell, show every digit that appears in at least one valid solution — useful for testing how constrained your puzzle is" onclick={handleCandidates} disabled={isBusy}>
+			Show True Candidates
 		</button>
 		<button class="btn cancel-btn" onclick={() => solverStore.cancel()} disabled={!isBusy}>
 			Cancel
@@ -60,8 +60,8 @@
 	</div>
 
 	<div class="max-solutions">
-		<label>
-			Max stored:
+		<label title="How many solutions to store and display. Raise this limit when checking for uniqueness.">
+			Max solutions to store:
 			<input
 				type="number"
 				min="1"
@@ -81,6 +81,11 @@
 		<div class="results">
 			<p class="count">
 				{solverStore.solutionCount} solution{solverStore.solutionCount !== 1 ? 's' : ''} found{solverStore.status === 'solving' ? ' so far...' : ''}
+				{#if solverStore.status === 'done' && solverStore.solutionCount === 1}
+					<span class="unique-badge" title="The puzzle has exactly one solution">✓ unique</span>
+				{:else if solverStore.status === 'done' && solverStore.solutionCount > 1}
+					<span class="not-unique-badge" title="A well-formed puzzle should have exactly one solution">not unique</span>
+				{/if}
 			</p>
 
 			{#if solverStore.solutions.length > 1}
@@ -119,7 +124,7 @@
 	{/if}
 
 	{#if solverStore.status === 'done' && solverStore.solutionCount === 0 && !solverStore.candidateResult}
-		<p class="no-solution">No solution found</p>
+		<p class="no-solution">No solution found — check that your rules and given clues are consistent.</p>
 	{/if}
 
 	{#if solverStore.compiledModel}
@@ -218,6 +223,16 @@
 		cursor: default;
 	}
 
+	.solve-btn {
+		background: #e8f5e9;
+		border-color: #4caf50;
+		color: #2e7d32;
+	}
+
+	.solve-btn:hover:not(:disabled) {
+		background: #c8e6c9;
+	}
+
 	.cancel-btn {
 		background: #fff3e0;
 		border-color: #ff9800;
@@ -274,6 +289,32 @@
 		margin: 0 0 6px;
 		font-size: 13px;
 		font-weight: 500;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.unique-badge {
+		font-size: 11px;
+		font-weight: 600;
+		color: #2e7d32;
+		background: #e8f5e9;
+		border: 1px solid #a5d6a7;
+		border-radius: 3px;
+		padding: 1px 5px;
+		cursor: help;
+	}
+
+	.not-unique-badge {
+		font-size: 11px;
+		font-weight: 600;
+		color: #c62828;
+		background: #ffebee;
+		border: 1px solid #ef9a9a;
+		border-radius: 3px;
+		padding: 1px 5px;
+		cursor: help;
 	}
 
 	.navigation {
