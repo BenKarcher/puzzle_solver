@@ -48,10 +48,10 @@
 		<button class="btn solve-btn" title="Find one valid solution and display it on the grid" onclick={handleSolve} disabled={isBusy}>
 			{isBusy ? 'Solving...' : 'Find a Solution'}
 		</button>
-		<button class="btn" title="Enumerate all solutions (up to the max below). Use this to check your puzzle is unique." onclick={handleSolveAll} disabled={isBusy}>
+		<button class="btn" title="Runs until every valid solution is found or you hit Cancel. The final count is shown when done. Only the first N solutions are stored and browsable (set N with &quot;Max solutions to store&quot; below) — but the count always reflects the true total." onclick={handleSolveAll} disabled={isBusy}>
 			Find All Solutions
 		</button>
-		<button class="btn" title="For each empty cell, show every digit that appears in at least one valid solution — useful for testing how constrained your puzzle is" onclick={handleCandidates} disabled={isBusy}>
+		<button class="btn" title="For each cell and each possible value, checks whether that value can appear in at least one valid solution given only the rules and Design-mode givens. Cells with a single candidate are filled in; cells with multiple show pencil marks. Note: numbers you have entered in Solve mode are not treated as constraints here — only cells marked as given in Design mode count." onclick={handleCandidates} disabled={isBusy}>
 			Show True Candidates
 		</button>
 		<button class="btn cancel-btn" onclick={() => solverStore.cancel()} disabled={!isBusy}>
