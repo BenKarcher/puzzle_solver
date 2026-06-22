@@ -1,0 +1,14 @@
+{
+    "id": "slitherlink",
+    "name": "Slitherlink",
+    "description": "Draw a single loop through the grid such that the number in each cell indicates how many of its edges are part of the loop",
+    "categories": [
+        "loop",
+        "pencil"
+    ],
+    "rules": [
+        "edges-degree-0-or-2",
+        "global-number-equals-edges",
+        "edges-used-connected"
+    ]
+}

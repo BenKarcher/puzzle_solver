@@ -66,6 +66,8 @@ export function createBlankPuzzle(rows: number = 9, cols: number = 9): PuzzleSta
 		cells: createCellGrid(rows, cols),
 		hEdges: createHEdgeGrid(rows, cols),
 		vEdges: createVEdgeGrid(rows, cols),
+		manualGlobalRules: [],
+		activeRulesets: [],
 		globalRules: [],
 		localRules: [],
 		customRules: []

@@ -1,4 +1,4 @@
-import type { RuleConfig, LoadedRule, RenderFn, GeneratorFn, CustomRuleDefinition } from '$lib/model/types';
+import type { RuleConfig, LoadedRule, RenderFn, GeneratorFn, CustomRuleDefinition, RulesetConfig } from '$lib/model/types';
 
 // Eagerly load all config.json files
 const configModules = import.meta.glob('./library/*/config.json', { eager: true });
@@ -92,6 +92,27 @@ export function getRuleRenderers(): Map<string, RenderFn> {
 		}
 	}
 	return renderers;
+}
+
+// ---- Ruleset registry ----
+
+const rulesetModules = import.meta.glob('./rulesets/*.json', { eager: true });
+const allRulesets: RulesetConfig[] = [];
+
+interface RulesetModule {
+	default: RulesetConfig;
+}
+
+for (const [, module] of Object.entries(rulesetModules)) {
+	allRulesets.push((module as RulesetModule).default);
+}
+
+export function getAllRulesets(): RulesetConfig[] {
+	return [...allRulesets];
+}
+
+export function getRulesetById(id: string): RulesetConfig | undefined {
+	return allRulesets.find((rs) => rs.id === id);
 }
 
 // ---- Custom rule registration ----

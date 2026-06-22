@@ -40,7 +40,8 @@ export function drawNumbersLayer(
 				ctx.textBaseline = 'middle';
 				ctx.fillText(String(cell.number), cx, cy);
 			} else if (cell.pencilMarks.length > 0) {
-				drawPencilMarks(ctx, cell.pencilMarks, puzzle.solutionSpaces.numbers.max, cx, cy, cellSize);
+				const { min, max } = puzzle.solutionSpaces.numbers;
+				drawPencilMarks(ctx, cell.pencilMarks, min, max, cx, cy, cellSize);
 			}
 		}
 	}
@@ -49,30 +50,36 @@ export function drawNumbersLayer(
 function drawPencilMarks(
 	ctx: CanvasRenderingContext2D,
 	marks: number[],
+	minVal: number,
 	maxVal: number,
 	cx: number,
 	cy: number,
 	cellSize: number
 ): void {
+	// N×N grid layout: minVal at top-left, filling left-to-right top-to-bottom
+	const count = maxVal - minVal + 1;
+	const N = Math.ceil(Math.sqrt(count));
+
+	// Distribute slots evenly across 88% of the cell
+	const usable = cellSize * 0.88;
+	const slotSize = usable / N;
+	const fontSize = Math.max(5, slotSize * 0.72);
+
+	const startX = cx - slotSize * (N - 1) / 2;
+	const startY = cy - slotSize * (N - 1) / 2;
+
 	ctx.fillStyle = PENCIL_COLOR;
-	const fontSize = cellSize * 0.22;
 	ctx.font = `${fontSize}px sans-serif`;
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
-	// Arrange in a 3x3 grid for values 1-9
-	const cols = 3;
-	const rows = Math.ceil(maxVal / cols);
-	const spacing = cellSize * 0.28;
-	const startX = cx - spacing;
-	const startY = cy - spacing * (rows - 1) / 2;
-
 	for (const mark of marks) {
-		const idx = mark - 1;
-		const col = idx % cols;
-		const row = Math.floor(idx / cols);
-		const x = startX + col * spacing;
-		const y = startY + row * spacing;
+		const idx = mark - minVal;
+		if (idx < 0 || idx >= N * N) continue;
+		const col = idx % N;
+		const row = Math.floor(idx / N);
+		const x = startX + col * slotSize;
+		const y = startY + row * slotSize;
 		ctx.fillText(String(mark), x, y);
 	}
 }

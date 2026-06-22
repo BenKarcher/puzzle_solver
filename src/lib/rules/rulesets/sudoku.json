@@ -1,0 +1,7 @@
+{
+	"id": "sudoku",
+	"name": "Sudoku",
+	"description": "Standard sudoku: every row, column, and box contains each digit exactly once",
+	"categories": ["sudoku", "latin-square", "uniqueness"],
+	"rules": ["latin-rows", "latin-cols", "latin-regions"]
+}

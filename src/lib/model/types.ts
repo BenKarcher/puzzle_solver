@@ -175,6 +175,15 @@ export interface CustomRuleDefinition {
 
 // ---- Top-level puzzle state ----
 
+export interface RulesetConfig {
+	id: string;
+	name: string;
+	description: string;
+	categories: string[];
+	/** Rule IDs from the library that belong to this set */
+	rules: string[];
+}
+
 export interface PuzzleState {
 	name: string;
 	dimensions: GridDimensions;
@@ -182,6 +191,11 @@ export interface PuzzleState {
 	cells: CellValue[][];
 	hEdges: EdgeValue[][];
 	vEdges: EdgeValue[][];
+	/** Global rules toggled on individually by the user (not via a ruleset) */
+	manualGlobalRules: string[];
+	/** Active ruleset IDs; their global rules are merged into globalRules by the store */
+	activeRulesets: string[];
+	/** Effective global rules = manualGlobalRules ∪ (rules from all activeRulesets). Kept in sync by the store. */
 	globalRules: string[];
 	localRules: RuleInstance[];
 	customRules: CustomRuleDefinition[];

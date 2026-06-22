@@ -18,7 +18,7 @@ import {
 import type { CandidateResult } from '$lib/solver/candidates';
 import { buildVariableSpaces } from '$lib/solver/variable-spaces';
 import { history } from './history.svelte';
-import { getRuleById } from '$lib/rules/registry';
+import { getRuleById, getRulesetById, getAllRulesets } from '$lib/rules/registry';
 import { ui } from './ui.svelte';
 
 class PuzzleStore {
@@ -270,14 +270,50 @@ class PuzzleStore {
 
 	// ---- Global rules ----
 
+	/** Recompute puzzle.globalRules as the union of manual rules + all active ruleset rules. */
+	private syncEffectiveGlobalRules(): void {
+		const rulesetRules = new Set<string>();
+		for (const rsId of this.puzzle.activeRulesets) {
+			const rs = getRulesetById(rsId);
+			if (rs) rs.rules.forEach((id) => rulesetRules.add(id));
+		}
+		const manual = this.puzzle.manualGlobalRules;
+		const effective = [...new Set([...manual, ...rulesetRules])];
+		this.puzzle.globalRules = effective;
+	}
+
 	toggleGlobalRule(ruleId: string): void {
 		this.pushHistory();
-		const idx = this.puzzle.globalRules.indexOf(ruleId);
+		const idx = this.puzzle.manualGlobalRules.indexOf(ruleId);
 		if (idx >= 0) {
-			this.puzzle.globalRules = this.puzzle.globalRules.filter((id) => id !== ruleId);
+			this.puzzle.manualGlobalRules = this.puzzle.manualGlobalRules.filter((id) => id !== ruleId);
 		} else {
-			this.puzzle.globalRules = [...this.puzzle.globalRules, ruleId];
+			this.puzzle.manualGlobalRules = [...this.puzzle.manualGlobalRules, ruleId];
 		}
+		this.syncEffectiveGlobalRules();
+	}
+
+	// ---- Rule sets ----
+
+	toggleRuleset(rulesetId: string): void {
+		this.pushHistory();
+		const isActive = this.puzzle.activeRulesets.includes(rulesetId);
+		if (isActive) {
+			this.puzzle.activeRulesets = this.puzzle.activeRulesets.filter((id) => id !== rulesetId);
+		} else {
+			const rs = getRulesetById(rulesetId);
+			if (!rs) return;
+			this.puzzle.activeRulesets = [...this.puzzle.activeRulesets, rulesetId];
+			// Favorite local rules in the set
+			const localRuleIds = rs.rules.filter((id) => {
+				const r = getRuleById(id);
+				return r && r.config.scope === 'local';
+			});
+			if (localRuleIds.length > 0) {
+				ui.favoriteRules = new Set([...ui.favoriteRules, ...localRuleIds]);
+			}
+		}
+		this.syncEffectiveGlobalRules();
 	}
 
 	// ---- Local rules ----
@@ -356,7 +392,8 @@ class PuzzleStore {
 		this.puzzle.customRules = [...this.puzzle.customRules, rule];
 		// Auto-enable global custom rules
 		if (rule.scope === 'global') {
-			this.puzzle.globalRules = [...this.puzzle.globalRules, rule.id];
+			this.puzzle.manualGlobalRules = [...this.puzzle.manualGlobalRules, rule.id];
+			this.syncEffectiveGlobalRules();
 		}
 	}
 
@@ -370,8 +407,9 @@ class PuzzleStore {
 	removeCustomRule(ruleId: string): void {
 		this.pushHistory();
 		this.puzzle.customRules = this.puzzle.customRules.filter((r) => r.id !== ruleId);
-		this.puzzle.globalRules = this.puzzle.globalRules.filter((id) => id !== ruleId);
+		this.puzzle.manualGlobalRules = this.puzzle.manualGlobalRules.filter((id) => id !== ruleId);
 		this.puzzle.localRules = this.puzzle.localRules.filter((inst) => inst.ruleId !== ruleId);
+		this.syncEffectiveGlobalRules();
 	}
 
 	// ---- Apply solver results ----
@@ -455,6 +493,12 @@ class PuzzleStore {
 		const { favoriteRules, ...state } = parsed;
 		// Backward compatibility: older saves may lack customRules
 		if (!state.customRules) state.customRules = [];
+		// Backward compatibility: older saves lack ruleset fields
+		if (!state.activeRulesets) state.activeRulesets = [];
+		if (!state.manualGlobalRules) {
+			// Treat existing globalRules as manually added
+			state.manualGlobalRules = [...(state.globalRules ?? [])];
+		}
 		// Backward compatibility: older saves may lack the modifiers solution space
 		if (!state.solutionSpaces.modifiers) {
 			state.solutionSpaces.modifiers = { enabled: false, min: 1, max: 18 };

@@ -2,8 +2,8 @@
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { ui } from '$lib/state/ui.svelte';
 	import { selection } from '$lib/state/selection.svelte';
-	import { isCustomRule } from '$lib/rules/registry';
-	import type { RuleConfig } from '$lib/model/types';
+	import { isCustomRule, getAllRulesets } from '$lib/rules/registry';
+	import type { RuleConfig, RulesetConfig } from '$lib/model/types';
 
 	interface Props {
 		ruleConfigs: RuleConfig[];
@@ -13,23 +13,27 @@
 	let searchQuery = $state('');
 	let libraryOpen = $state(false);
 
-	function getAvailableRules(): RuleConfig[] {
-		const enabledSpaces = new Set<string>();
-		const spaces = puzzleStore.puzzle.solutionSpaces;
-		if (spaces.numbers.enabled) {
-			enabledSpaces.add('digits');
-			enabledSpaces.add('values');
-		}
-		if (spaces.modifiers.enabled) enabledSpaces.add('modifier');
-		if (spaces.shading.enabled) enabledSpaces.add('shading');
-		if (spaces.borders.enabled) enabledSpaces.add('borders');
-		if (spaces.lines.enabled) enabledSpaces.add('lines');
-		// 'regions' and 'positions' are compiler-only tags (no puzzle-setup toggle) — always satisfied
-		enabledSpaces.add('regions');
-		enabledSpaces.add('positions');
+	const allRulesets = getAllRulesets();
 
+	// ── Filtering ─────────────────────────────────────────────────────────────
+
+	function getEnabledSpaces(): Set<string> {
+		const s = new Set<string>();
+		const spaces = puzzleStore.puzzle.solutionSpaces;
+		if (spaces.numbers.enabled) { s.add('digits'); s.add('values'); }
+		if (spaces.modifiers.enabled) s.add('modifier');
+		if (spaces.shading.enabled) s.add('shading');
+		if (spaces.borders.enabled) s.add('borders');
+		if (spaces.lines.enabled) s.add('lines');
+		s.add('regions');
+		s.add('positions');
+		return s;
+	}
+
+	function getAvailableRules(): RuleConfig[] {
+		const enabledSpaces = getEnabledSpaces();
 		const filtered = ruleConfigs.filter((rule) => {
-			if (!rule.requiredSpaces.every((s) => enabledSpaces.has(s))) return false;
+			if (!rule.requiredSpaces.every((sp) => enabledSpaces.has(sp))) return false;
 			if (searchQuery) {
 				const q = searchQuery.toLowerCase();
 				return (
@@ -41,7 +45,6 @@
 			return true;
 		});
 
-		// Sort: favorites first, then alphabetically
 		const favs = ui.favoriteRules;
 		filtered.sort((a, b) => {
 			const aFav = favs.has(a.id) ? 0 : 1;
@@ -49,12 +52,58 @@
 			if (aFav !== bFav) return aFav - bFav;
 			return a.name.localeCompare(b.name);
 		});
-
 		return filtered;
 	}
 
+	/** Infer required spaces for a ruleset as the union of all its rules' required spaces. */
+	function rulesetRequiredSpaces(rs: RulesetConfig): string[] {
+		const spaces = new Set<string>();
+		for (const id of rs.rules) {
+			const cfg = ruleConfigs.find((r) => r.id === id);
+			cfg?.requiredSpaces.forEach((s) => spaces.add(s));
+		}
+		return [...spaces];
+	}
+
+	function getAvailableRulesets(): RulesetConfig[] {
+		const enabledSpaces = getEnabledSpaces();
+		return allRulesets.filter((rs) => {
+			// Only show if all required spaces are enabled
+			if (!rulesetRequiredSpaces(rs).every((s) => enabledSpaces.has(s))) return false;
+			if (!searchQuery) return true;
+			const q = searchQuery.toLowerCase();
+			return (
+				rs.name.toLowerCase().includes(q) ||
+				rs.description.toLowerCase().includes(q) ||
+				rs.categories.some((c) => c.toLowerCase().includes(q)) ||
+				rs.rules.some((id) => {
+					const cfg = ruleConfigs.find((r) => r.id === id);
+					return cfg?.name.toLowerCase().includes(q);
+				})
+			);
+		});
+	}
+
+	// ── Actions ───────────────────────────────────────────────────────────────
+
 	function toggleGlobalRule(ruleId: string) {
 		puzzleStore.toggleGlobalRule(ruleId);
+	}
+
+	function toggleRuleset(rulesetId: string) {
+		puzzleStore.toggleRuleset(rulesetId);
+	}
+
+	function isGlobalEnabled(ruleId: string): boolean {
+		return puzzleStore.puzzle.globalRules.includes(ruleId);
+	}
+
+	function isManualGlobalEnabled(ruleId: string): boolean {
+		return puzzleStore.puzzle.manualGlobalRules.includes(ruleId);
+	}
+
+	function isRulesetActive(rulesetId: string): boolean {
+		return puzzleStore.puzzle.activeRulesets.includes(rulesetId);
 	}
 
 	function addLocalRule(rule: RuleConfig) {
@@ -91,10 +140,6 @@
 		if (config) addLocalRule(config);
 	}
 
-	function isGlobalEnabled(ruleId: string): boolean {
-		return puzzleStore.puzzle.globalRules.includes(ruleId);
-	}
-
 	function removeLocalInstance(instanceId: string) {
 		puzzleStore.removeRuleInstance(instanceId);
 		if (ui.selectedRuleInstanceId === instanceId) {
@@ -129,59 +174,84 @@
 	<h3>Active Rules</h3>
 
 	<div class="active-rules-list">
-	<!-- Global rules -->
-	{#each puzzleStore.puzzle.globalRules as ruleId}
-		{@const config = ruleConfigs.find((r) => r.id === ruleId)}
-		{#if config}
-			<div class="active-rule global" title="Global rule — applies to the entire grid">
-				<span class="rule-badge global-badge" title="Global rule">G</span>
-				<span class="rule-name">{config.name}</span>
-				{#if isCustomRule(ruleId)}
-					<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(ruleId, e)}>&#9998;</button>
-				{/if}
-				<button class="remove-btn" title="Remove this rule" onclick={() => toggleGlobalRule(ruleId)}>×</button>
-			</div>
-		{/if}
-	{/each}
+		<!-- ── Active rulesets (with indented global rules) ── -->
+		{#each puzzleStore.puzzle.activeRulesets as rulesetId}
+			{@const rs = allRulesets.find((r) => r.id === rulesetId)}
+			{#if rs}
+				<div class="ruleset-group">
+					<div class="ruleset-header">
+						<span class="rule-badge set-badge" title="Rule set">S</span>
+						<span class="ruleset-name">{rs.name}</span>
+						<button class="remove-btn" title="Remove this rule set (and its exclusive rules)" onclick={() => toggleRuleset(rulesetId)}>×</button>
+					</div>
+					{#each rs.rules as ruleId}
+						{@const cfg = ruleConfigs.find((r) => r.id === ruleId)}
+						{#if cfg && cfg.scope === 'global' && isGlobalEnabled(ruleId)}
+							<div class="active-rule global indented">
+								<span class="rule-badge global-badge" title="Global rule">G</span>
+								<span class="rule-name">{cfg.name}</span>
+							</div>
+						{/if}
+					{/each}
+				</div>
+			{/if}
+		{/each}
 
-	<!-- Local rule instances -->
-	{#each puzzleStore.puzzle.localRules as instance}
-		{@const config = ruleConfigs.find((r) => r.id === instance.ruleId)}
-		{#if config}
-			<div
-				class="active-rule local"
-				class:selected={ui.selectedRuleInstanceId === instance.id}
-				title="Local rule — click to configure which cells it applies to"
-				role="button"
-				tabindex="0"
-				onclick={() => selectInstance(instance.id)}
-				onkeydown={(e) => e.key === 'Enter' && selectInstance(instance.id)}
-			>
-				<span class="rule-badge local-badge" title="Local rule (applies to selected cells)">L</span>
-				<span class="rule-name">{config.name}</span>
-				{#each instance.groups as group, gi}
-					{#if config.groups?.[gi]?.hasValue && group.value !== null}
-						<span class="group-value">({group.value})</span>
+		<!-- ── Individually toggled global rules ── -->
+		{#each puzzleStore.puzzle.manualGlobalRules as ruleId}
+			{@const config = ruleConfigs.find((r) => r.id === ruleId)}
+			{#if config}
+				<div class="active-rule global" title="Global rule — applies to the entire grid">
+					<span class="rule-badge global-badge" title="Global rule">G</span>
+					<span class="rule-name">{config.name}</span>
+					{#if isCustomRule(ruleId)}
+						<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(ruleId, e)}>&#9998;</button>
 					{/if}
-				{/each}
-				<button class="dup-btn" title="Add another instance of this rule" onclick={(e) => { e.stopPropagation(); duplicateLocalRule(instance.ruleId); }}>+</button>
-				{#if isCustomRule(instance.ruleId)}
-					<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(instance.ruleId, e)}>&#9998;</button>
-				{/if}
-				<button class="remove-btn" title="Remove" onclick={(e) => { e.stopPropagation(); removeLocalInstance(instance.id); }}>×</button>
-			</div>
-		{/if}
-	{/each}
+					<button class="remove-btn" title="Remove this rule" onclick={() => toggleGlobalRule(ruleId)}>×</button>
+				</div>
+			{/if}
+		{/each}
 
-	{#if puzzleStore.puzzle.globalRules.length === 0 && puzzleStore.puzzle.localRules.length === 0}
-		<p class="empty">No rules yet — open the <strong>Rule Library</strong> below to add constraints.</p>
-	{/if}
+		<!-- ── Local rule instances ── -->
+		{#each puzzleStore.puzzle.localRules as instance}
+			{@const config = ruleConfigs.find((r) => r.id === instance.ruleId)}
+			{#if config}
+				<div
+					class="active-rule local"
+					class:selected={ui.selectedRuleInstanceId === instance.id}
+					title="Local rule — click to configure which cells it applies to"
+					role="button"
+					tabindex="0"
+					onclick={() => selectInstance(instance.id)}
+					onkeydown={(e) => e.key === 'Enter' && selectInstance(instance.id)}
+				>
+					<span class="rule-badge local-badge" title="Local rule (applies to selected cells)">L</span>
+					<span class="rule-name">{config.name}</span>
+					{#each instance.groups as group, gi}
+						{#if config.groups?.[gi]?.hasValue && group.value !== null}
+							<span class="group-value">({group.value})</span>
+						{/if}
+					{/each}
+					<button class="dup-btn" title="Add another instance of this rule" onclick={(e) => { e.stopPropagation(); duplicateLocalRule(instance.ruleId); }}>+</button>
+					{#if isCustomRule(instance.ruleId)}
+						<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(instance.ruleId, e)}>&#9998;</button>
+					{/if}
+					<button class="remove-btn" title="Remove" onclick={(e) => { e.stopPropagation(); removeLocalInstance(instance.id); }}>×</button>
+				</div>
+			{/if}
+		{/each}
+
+		{#if puzzleStore.puzzle.globalRules.length === 0 && puzzleStore.puzzle.localRules.length === 0 && puzzleStore.puzzle.activeRulesets.length === 0}
+			<p class="empty">No rules yet — open the <strong>Rule Library</strong> below to add constraints.</p>
+		{/if}
 	</div>
 
+	<!-- ── Library ── -->
 	<details class="library-section" bind:open={libraryOpen}>
 		<summary class="library-header"><h3>Rule Library</h3></summary>
 
 	<p class="library-hint">
+		<span class="badge-explain"><span class="rule-badge set-badge">S</span> Set — adds a bundle of related rules at once</span>
 		<span class="badge-explain"><span class="rule-badge global-badge">G</span> Global — on/off for entire grid</span>
 		<span class="badge-explain"><span class="rule-badge local-badge">L</span> Local — click Add, then select cells</span>
 	</p>
@@ -194,6 +264,31 @@
 	/>
 
 	<div class="rule-list">
+		<!-- Rule sets first -->
+		{#each getAvailableRulesets() as rs}
+			<div class="rule-item ruleset-item">
+				<div class="rule-info">
+					<div class="rule-name-row">
+						<span class="rule-badge set-badge" title="Rule set: adds multiple rules at once">S</span>
+						<span class="rule-name">{rs.name}</span>
+					</div>
+					<span class="rule-desc">{rs.description}</span>
+					<span class="ruleset-members">
+						{rs.rules.map((id) => ruleConfigs.find((r) => r.id === id)?.name ?? id).join(' · ')}
+					</span>
+				</div>
+				<button
+					class="add-btn"
+					class:active={isRulesetActive(rs.id)}
+					title={isRulesetActive(rs.id) ? 'Currently active — click to remove' : 'Add all rules in this set'}
+					onclick={() => toggleRuleset(rs.id)}
+				>
+					{isRulesetActive(rs.id) ? 'On' : 'Add'}
+				</button>
+			</div>
+		{/each}
+
+		<!-- Individual rules -->
 		{#each getAvailableRules() as rule}
 			<div class="rule-item">
 				<button
@@ -268,9 +363,33 @@
 		box-sizing: border-box;
 	}
 
+	/* ── Active rules list ── */
 	.active-rules-list {
-		max-height: 200px;
+		max-height: 260px;
 		overflow-y: auto;
+	}
+
+	/* ── Rule set group in active list ── */
+	.ruleset-group {
+		margin-bottom: 4px;
+		border: 1px solid #e0e0e0;
+		border-radius: 5px;
+		overflow: hidden;
+	}
+
+	.ruleset-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 8px;
+		background: #f3e5f5;
+		font-size: 13px;
+	}
+
+	.ruleset-name {
+		font-weight: 600;
+		flex: 1;
+		color: #4a148c;
 	}
 
 	.active-rule {
@@ -282,6 +401,14 @@
 		margin-bottom: 2px;
 		font-size: 13px;
 		cursor: pointer;
+	}
+
+	.active-rule.indented {
+		padding-left: 18px;
+		border-radius: 0;
+		margin-bottom: 0;
+		background: #fce4ec !important;
+		border-top: 1px solid #f8bbd0;
 	}
 
 	.active-rule.global {
@@ -297,7 +424,7 @@
 		outline: 2px solid #4287f5;
 	}
 
-	/* ── Rule type badges ── */
+	/* ── Badges ── */
 	.rule-badge {
 		display: inline-flex;
 		align-items: center;
@@ -311,21 +438,16 @@
 		cursor: help;
 	}
 
-	.global-badge {
-		background: #c8e6c9;
-		color: #2e7d32;
-	}
-
-	.local-badge {
-		background: #bbdefb;
-		color: #1565c0;
-	}
+	.global-badge { background: #c8e6c9; color: #2e7d32; }
+	.local-badge  { background: #bbdefb; color: #1565c0; }
+	.set-badge    { background: #e1bee7; color: #6a1b9a; }
 
 	.group-value {
 		font-size: 11px;
 		color: #666;
 	}
 
+	/* ── Buttons ── */
 	.dup-btn {
 		margin-left: auto;
 		background: none;
@@ -337,9 +459,7 @@
 		padding: 0 4px;
 	}
 
-	.dup-btn:hover {
-		color: #4caf50;
-	}
+	.dup-btn:hover { color: #4caf50; }
 
 	.remove-btn {
 		background: none;
@@ -350,13 +470,10 @@
 		padding: 0 4px;
 	}
 
-	.active-rule.global .remove-btn {
-		margin-left: auto;
-	}
+	.active-rule.global .remove-btn { margin-left: auto; }
+	.ruleset-header .remove-btn { margin-left: auto; }
 
-	.remove-btn:hover {
-		color: #e53935;
-	}
+	.remove-btn:hover { color: #e53935; }
 
 	.edit-btn {
 		background: none;
@@ -367,9 +484,7 @@
 		padding: 0 4px;
 	}
 
-	.edit-btn:hover {
-		color: #4287f5;
-	}
+	.edit-btn:hover { color: #4287f5; }
 
 	/* ── Library section — collapsible ── */
 	.library-section {
@@ -385,9 +500,7 @@
 		gap: 4px;
 	}
 
-	.library-header::-webkit-details-marker {
-		display: none;
-	}
+	.library-header::-webkit-details-marker { display: none; }
 
 	.library-header::before {
 		content: '\25B6';
@@ -396,13 +509,8 @@
 		transition: transform 0.15s;
 	}
 
-	.library-section[open] > .library-header::before {
-		transform: rotate(90deg);
-	}
-
-	.library-header h3 {
-		margin: 0;
-	}
+	.library-section[open] > .library-header::before { transform: rotate(90deg); }
+	.library-header h3 { margin: 0; }
 
 	.library-hint {
 		display: flex;
@@ -427,10 +535,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
-		max-height: 300px;
+		max-height: 350px;
 		overflow-y: auto;
 	}
 
+	/* ── Rule / ruleset items ── */
 	.rule-item {
 		display: flex;
 		align-items: center;
@@ -438,6 +547,11 @@
 		padding: 6px 8px;
 		border: 1px solid #eee;
 		border-radius: 4px;
+	}
+
+	.ruleset-item {
+		border-color: #ce93d8;
+		background: #faf0ff;
 	}
 
 	.rule-info {
@@ -464,6 +578,12 @@
 		color: #888;
 	}
 
+	.ruleset-members {
+		font-size: 10px;
+		color: #9c4dcc;
+		font-style: italic;
+	}
+
 	.add-btn {
 		padding: 2px 10px;
 		border: 1px solid #ccc;
@@ -480,9 +600,7 @@
 		border-color: #4caf50;
 	}
 
-	.add-btn:hover:not(.active) {
-		background: #eee;
-	}
+	.add-btn:hover:not(.active) { background: #eee; }
 
 	.fav-btn {
 		background: none;
@@ -495,13 +613,8 @@
 		line-height: 1;
 	}
 
-	.fav-btn.favorited {
-		color: #ffc107;
-	}
-
-	.fav-btn:hover {
-		color: #ffc107;
-	}
+	.fav-btn.favorited { color: #ffc107; }
+	.fav-btn:hover { color: #ffc107; }
 
 	.custom-btn {
 		margin-top: 12px;

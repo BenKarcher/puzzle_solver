@@ -1,6 +1,6 @@
 {
 	"id": "latin-cols",
-	"name": "Sudoku Columns",
+	"name": "Latin Columns",
 	"description": "Each column must contain all different numbers (no repeats)",
 	"categories": ["latin-square", "sudoku", "uniqueness"],
 	"requiredSpaces": ["digits"],
