@@ -13,6 +13,9 @@
 	let searchQuery = $state('');
 	let libraryOpen = $state(false);
 
+	const favoritedRules = $derived(getAvailableRules().filter((r) => ui.favoriteRules.has(r.id)));
+	const nonFavoritedRules = $derived(getAvailableRules().filter((r) => !ui.favoriteRules.has(r.id)));
+
 	const allRulesets = getAllRulesets();
 
 	// ── Filtering ─────────────────────────────────────────────────────────────
@@ -45,13 +48,7 @@
 			return true;
 		});
 
-		const favs = ui.favoriteRules;
-		filtered.sort((a, b) => {
-			const aFav = favs.has(a.id) ? 0 : 1;
-			const bFav = favs.has(b.id) ? 0 : 1;
-			if (aFav !== bFav) return aFav - bFav;
-			return a.name.localeCompare(b.name);
-		});
+		filtered.sort((a, b) => a.name.localeCompare(b.name));
 		return filtered;
 	}
 
@@ -264,7 +261,47 @@
 	/>
 
 	<div class="rule-list">
-		<!-- Rule sets first -->
+		<!-- 1. Favorited rules -->
+		{#each favoritedRules as rule}
+			<div class="rule-item">
+				<button
+					class="fav-btn"
+					class:favorited={ui.favoriteRules.has(rule.id)}
+					title={ui.favoriteRules.has(rule.id) ? 'Unfavorite' : 'Favorite'}
+					onclick={(e) => toggleFavorite(rule.id, e)}
+				>
+					{ui.favoriteRules.has(rule.id) ? '★' : '☆'}
+				</button>
+				<div class="rule-info">
+					<div class="rule-name-row">
+						<span
+							class="rule-badge {rule.scope === 'global' ? 'global-badge' : 'local-badge'}"
+							title={rule.scope === 'global' ? 'Global: applies to the whole grid' : 'Local: you pick which cells it applies to'}
+						>{rule.scope === 'global' ? 'G' : 'L'}</span>
+						<span class="rule-name">{rule.name}</span>
+					</div>
+					<span class="rule-desc">{rule.description}</span>
+				</div>
+				{#if rule.scope === 'global'}
+					<button
+						class="add-btn"
+						class:active={isGlobalEnabled(rule.id)}
+						title={isGlobalEnabled(rule.id) ? 'Currently enabled — click to disable' : 'Click to enable for the whole grid'}
+						onclick={() => toggleGlobalRule(rule.id)}
+					>
+						{isGlobalEnabled(rule.id) ? 'On' : 'Off'}
+					</button>
+				{:else}
+					<button class="add-btn" title="Add, then click cells on the grid to apply it" onclick={() => addLocalRule(rule)}>Add</button>
+				{/if}
+				{#if isCustomRule(rule.id)}
+					<button class="edit-btn" title="Edit definition" onclick={(e) => editCustomRule(rule.id, e)}>&#9998;</button>
+					<button class="remove-btn" title="Delete" onclick={(e) => removeCustomRule(rule.id, e)}>×</button>
+				{/if}
+			</div>
+		{/each}
+
+		<!-- 2. Rule sets -->
 		{#each getAvailableRulesets() as rs}
 			<div class="rule-item ruleset-item">
 				<div class="rule-info">
@@ -288,8 +325,8 @@
 			</div>
 		{/each}
 
-		<!-- Individual rules -->
-		{#each getAvailableRules() as rule}
+		<!-- 3. Non-favorited rules -->
+		{#each nonFavoritedRules as rule}
 			<div class="rule-item">
 				<button
 					class="fav-btn"
