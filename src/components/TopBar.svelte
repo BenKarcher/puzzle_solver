@@ -36,6 +36,11 @@
 			if (!hasAnySolutionSpace()) return;
 			syncActiveTool();
 		}
+		// Leaving region-edit: cleanup partial edges and reset sub-mode
+		if (ui.mode === 'region-edit' && mode !== 'region-edit') {
+			puzzleStore.cleanupDrawEdgesMode();
+			ui.regionDrawEdges = false;
+		}
 		ui.setMode(mode);
 	}
 

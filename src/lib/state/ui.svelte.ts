@@ -11,6 +11,8 @@ class UIStore {
 	favoriteRules = $state<Set<string>>(new Set());
 	/** One-shot: when set, the value input for this (instanceId, groupIndex=0) autofocuses on render */
 	pendingValueFocus = $state<string | null>(null);
+	/** Whether the region editor is in "draw edges" sub-mode vs the default "paint" mode */
+	regionDrawEdges = $state(false);
 
 	setMode(mode: AppMode): void {
 		this.mode = mode;

@@ -4,6 +4,7 @@
 	import { solverStore } from '$lib/solver/solver.svelte';
 	import { getAllLoadedRules } from '$lib/rules/registry';
 	import GridSetup from './panels/GridSetup.svelte';
+	import RegionEditor from './panels/RegionEditor.svelte';
 	import RuleLibrary from './panels/RuleLibrary.svelte';
 	import RuleInstance from './panels/RuleInstance.svelte';
 	import SolverPanel from './panels/SolverPanel.svelte';
@@ -46,13 +47,10 @@
 </script>
 
 <aside class="sidebar">
-	{#if ui.mode === 'grid-setup' || ui.mode === 'region-edit'}
+	{#if ui.mode === 'grid-setup'}
 		<GridSetup />
-		{#if ui.mode === 'region-edit'}
-			<div class="panel">
-				<p class="hint">Click cells and type numbers to assign region IDs. Cells with the same ID form a region.</p>
-			</div>
-		{/if}
+	{:else if ui.mode === 'region-edit'}
+		<RegionEditor />
 	{:else if ui.mode === 'setting'}
 		{@const selectedInstance = getSelectedInstance()}
 		{@const selectedConfig = getSelectedConfig()}

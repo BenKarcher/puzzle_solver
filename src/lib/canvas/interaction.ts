@@ -245,6 +245,17 @@ export function handleCanvasMouseDown(
 	const mode = ui.mode;
 	const tool = ui.activeTool;
 
+	// Region draw-edges mode: node-based drag identical to border tool but writes region edges
+	if (mode === 'region-edit' && ui.regionDrawEdges) {
+		const node = closestBorderNode(x, y, layout, rows, cols);
+		if (!node) return;
+		lastBorderNode = node;
+		borderDragValue = null;
+		selection.clearSelection();
+		selection.startDrag();
+		return;
+	}
+
 	// Border/line tools use node-based drag: mouseDown selects closest node,
 	// mouseMove draws when a new neighboring node is reached
 	if ((mode === 'setting' || mode === 'solving') && tool === 'border') {
@@ -333,6 +344,29 @@ export function handleCanvasMouseMove(
 	const mode = ui.mode;
 	const tool = ui.activeTool;
 
+	// Region draw-edges drag: toggle interior edges and auto-renumber
+	if (mode === 'region-edit' && ui.regionDrawEdges && lastBorderNode) {
+		const node = closestBorderNode(x, y, layout, rows, cols);
+		if (!node || (node.row === lastBorderNode.row && node.col === lastBorderNode.col)) return;
+		const edge = borderNodesToEdge(lastBorderNode, node);
+		if (!edge) { lastBorderNode = node; return; }
+
+		// Only interior edges divide regions — skip outer boundary
+		if (edge.direction === 'h' && (edge.row === 0 || edge.row === rows)) { lastBorderNode = node; return; }
+		if (edge.direction === 'v' && (edge.col === 0 || edge.col === cols)) { lastBorderNode = node; return; }
+
+		const currentEdge = puzzleStore.getEdge(edge);
+		if (!currentEdge) { lastBorderNode = node; return; }
+
+		if (borderDragValue === null) {
+			borderDragValue = currentEdge.border === true ? null : true;
+		}
+		puzzleStore.setEdgeBorder(edge, borderDragValue, false);
+		puzzleStore.numberRegionsQuiet();
+		lastBorderNode = node;
+		return;
+	}
+
 	// Border drag: draw edge when moving to a new neighboring node
 	if ((mode === 'setting' || mode === 'solving') && tool === 'border' && lastBorderNode) {
 		const node = closestBorderNode(x, y, layout, rows, cols);
@@ -404,13 +438,27 @@ export function handleCanvasContextMenu(
 ): void {
 	const mode = ui.mode;
 	const tool = ui.activeTool;
-	if (mode !== 'setting' && mode !== 'solving') return;
+	if (mode !== 'setting' && mode !== 'solving' && mode !== 'region-edit') return;
 
 	const { rows, cols } = puzzleStore.puzzle.dimensions;
 	const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
 	const isGiven = mode === 'setting';
+
+	// Region draw-edges: right-click toggles an edge
+	if (mode === 'region-edit' && ui.regionDrawEdges) {
+		const edge = pixelToEdge(x, y, layout, rows, cols);
+		if (!edge) return;
+		if (edge.direction === 'h' && (edge.row === 0 || edge.row === rows)) return;
+		if (edge.direction === 'v' && (edge.col === 0 || edge.col === cols)) return;
+		const currentEdge = puzzleStore.getEdge(edge);
+		if (!currentEdge) return;
+		e.preventDefault();
+		puzzleStore.setEdgeBorder(edge, currentEdge.border === true ? null : true, false);
+		puzzleStore.numberRegionsQuiet();
+		return;
+	}
 
 	if (tool === 'border') {
 		const edge = pixelToEdge(x, y, layout, rows, cols);
@@ -511,8 +559,10 @@ export function handleKeyDown(e: KeyboardEvent): void {
 		const { min, max } = puzzleStore.puzzle.solutionSpaces.numbers;
 
 		if (mode === 'region-edit') {
-			for (const cell of cells) {
-				puzzleStore.setRegionId(cell, num);
+			if (!ui.regionDrawEdges) {
+				for (const cell of cells) {
+					puzzleStore.setRegionId(cell, num);
+				}
 			}
 			return;
 		}

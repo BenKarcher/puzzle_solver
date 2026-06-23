@@ -385,6 +385,114 @@ class PuzzleStore {
 		}
 	}
 
+	// ---- Region editing helpers ----
+
+	/**
+	 * Flood-fill the grid using current interior edges as barriers and assign
+	 * region IDs in top-left → bottom-right order. Does NOT push history.
+	 */
+	numberRegionsQuiet(): void {
+		const { rows, cols } = this.puzzle.dimensions;
+		const ids = new Int32Array(rows * cols).fill(-1);
+		const key = (r: number, c: number) => r * cols + c;
+		let nextId = 0;
+
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				if (ids[key(r, c)] !== -1) continue;
+				const queue: [number, number][] = [[r, c]];
+				ids[key(r, c)] = nextId;
+				let qi = 0;
+				while (qi < queue.length) {
+					const [cr, cc] = queue[qi++];
+					// Up:    hEdges[cr][cc]
+					if (cr > 0 && ids[key(cr - 1, cc)] === -1 && this.puzzle.hEdges[cr]?.[cc]?.border !== true) {
+						ids[key(cr - 1, cc)] = nextId; queue.push([cr - 1, cc]);
+					}
+					// Down:  hEdges[cr+1][cc]
+					if (cr < rows - 1 && ids[key(cr + 1, cc)] === -1 && this.puzzle.hEdges[cr + 1]?.[cc]?.border !== true) {
+						ids[key(cr + 1, cc)] = nextId; queue.push([cr + 1, cc]);
+					}
+					// Left:  vEdges[cr][cc]
+					if (cc > 0 && ids[key(cr, cc - 1)] === -1 && this.puzzle.vEdges[cr]?.[cc]?.border !== true) {
+						ids[key(cr, cc - 1)] = nextId; queue.push([cr, cc - 1]);
+					}
+					// Right: vEdges[cr][cc+1]
+					if (cc < cols - 1 && ids[key(cr, cc + 1)] === -1 && this.puzzle.vEdges[cr]?.[cc + 1]?.border !== true) {
+						ids[key(cr, cc + 1)] = nextId; queue.push([cr, cc + 1]);
+					}
+				}
+				nextId++;
+			}
+		}
+
+		for (let r = 0; r < rows; r++)
+			for (let c = 0; c < cols; c++)
+				this.puzzle.cells[r][c].regionId = ids[key(r, c)];
+	}
+
+	/**
+	 * Convert current regionId assignments into interior edges, then re-number.
+	 * Called when entering draw-edges sub-mode.
+	 */
+	initDrawEdgesMode(): void {
+		this.pushHistory();
+		const { rows, cols } = this.puzzle.dimensions;
+
+		// Draw a border wherever adjacent cells belong to different regions
+		for (let r = 0; r < rows - 1; r++) {
+			for (let c = 0; c < cols; c++) {
+				const edge = this.puzzle.hEdges[r + 1]?.[c];
+				if (edge) edge.border = this.puzzle.cells[r][c].regionId !== this.puzzle.cells[r + 1][c].regionId ? true : null;
+			}
+		}
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols - 1; c++) {
+				const edge = this.puzzle.vEdges[r]?.[c + 1];
+				if (edge) edge.border = this.puzzle.cells[r][c].regionId !== this.puzzle.cells[r][c + 1].regionId ? true : null;
+			}
+		}
+
+		this.numberRegionsQuiet();
+	}
+
+	/**
+	 * Remove interior edges that don't separate different regions (partial/dead edges).
+	 * Called when leaving draw-edges sub-mode or leaving region-edit entirely.
+	 */
+	cleanupDrawEdgesMode(): void {
+		const { rows, cols } = this.puzzle.dimensions;
+
+		for (let r = 0; r < rows - 1; r++) {
+			for (let c = 0; c < cols; c++) {
+				const edge = this.puzzle.hEdges[r + 1]?.[c];
+				if (edge?.border === true && this.puzzle.cells[r][c].regionId === this.puzzle.cells[r + 1][c].regionId)
+					edge.border = null;
+			}
+		}
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols - 1; c++) {
+				const edge = this.puzzle.vEdges[r]?.[c + 1];
+				if (edge?.border === true && this.puzzle.cells[r][c].regionId === this.puzzle.cells[r][c + 1].regionId)
+					edge.border = null;
+			}
+		}
+	}
+
+	/** Set every interior edge (making each cell its own region), then re-number. */
+	populateAllEdges(): void {
+		this.pushHistory();
+		const { rows, cols } = this.puzzle.dimensions;
+
+		for (let r = 1; r < rows; r++)
+			for (let c = 0; c < cols; c++) { const e = this.puzzle.hEdges[r]?.[c]; if (e) e.border = true; }
+
+		for (let r = 0; r < rows; r++)
+			for (let c = 1; c < cols; c++) { const e = this.puzzle.vEdges[r]?.[c]; if (e) e.border = true; }
+
+		this.numberRegionsQuiet();
+	}
+
 	// ---- Custom rules ----
 
 	addCustomRule(rule: CustomRuleDefinition): void {

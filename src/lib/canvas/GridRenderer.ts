@@ -6,6 +6,7 @@ import { drawSelectionLayer } from './layers/selection';
 import { drawBordersLayer } from './layers/borders';
 import { drawLinesLayer } from './layers/lines';
 import { drawRulesLayer } from './layers/rules';
+import { drawRegionBoundariesLayer } from './layers/regionBoundaries';
 
 const PADDING = 20;
 const BG_COLOR = '#ffffff';
@@ -74,6 +75,9 @@ export function renderGrid(
 	drawGridLayer(ctx, puzzle, cellSize, offsetX, offsetY);
 	drawBordersLayer(ctx, puzzle, cellSize, offsetX, offsetY);
 	drawLinesLayer(ctx, puzzle, cellSize, offsetX, offsetY);
+	if (mode === 'region-edit') {
+		drawRegionBoundariesLayer(ctx, puzzle, cellSize, offsetX, offsetY);
+	}
 	drawRulesLayer(ctx, puzzle, ruleRenderers, cellSize, offsetX, offsetY);
 	drawNumbersLayer(ctx, puzzle, mode, cellSize, offsetX, offsetY);
 
