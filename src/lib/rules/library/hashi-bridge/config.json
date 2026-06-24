@@ -1,0 +1,9 @@
+{
+	"id": "hashi-bridge",
+	"name": "Hashi Global Bridge",
+	"description": "Every cell that is not a Hashi island must act as a straight bridge: equal lines in and out on one axis, nothing on the other (no turns, crossings, or dead ends)",
+	"categories": ["lines", "hashi", "connectivity"],
+	"requiredSpaces": ["lines"],
+	"scope": "global",
+	"imports": ["cell-lines"]
+}

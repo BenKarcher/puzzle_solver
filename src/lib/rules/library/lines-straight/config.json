@@ -1,0 +1,15 @@
+{
+	"id": "lines-straight",
+	"name": "Lines Straight",
+	"description": "Lines must pass straight through each cell — equal count in and out on the same axis, and only one axis may be used (no turns, crossings, or dead ends)",
+	"categories": ["lines", "hashi"],
+	"requiredSpaces": ["lines"],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": false
+		}
+	]
+}

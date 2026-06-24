@@ -266,8 +266,11 @@ export function handleCanvasMouseDown(
 	}
 
 	// Border/line tools use node-based drag: mouseDown selects closest node,
-	// mouseMove draws when a new neighboring node is reached
-	if ((mode === 'setting' || mode === 'solving') && tool === 'border') {
+	// mouseMove draws when a new neighboring node is reached.
+	// Skip both when the user is editing a rule group — group cell assignment takes priority.
+	const editingGroup = mode === 'setting' && !!ui.selectedRuleInstanceId && !selectedGroupIsCellless();
+
+	if (!editingGroup && (mode === 'setting' || mode === 'solving') && tool === 'border') {
 		const node = closestBorderNode(x, y, layout, rows, cols);
 		if (!node) return;
 		lastBorderNode = node;
@@ -277,7 +280,7 @@ export function handleCanvasMouseDown(
 		return;
 	}
 
-	if ((mode === 'setting' || mode === 'solving') && tool === 'line') {
+	if (!editingGroup && (mode === 'setting' || mode === 'solving') && tool === 'line') {
 		const node = closestLineNode(x, y, layout, rows, cols);
 		if (!node) return;
 		lastLineNode = node;

@@ -1,0 +1,16 @@
+{
+	"id": "hashi-island",
+	"name": "Hashi Island",
+	"description": "Every cell in the group must have exactly N total lines connected to it (sum of all four directions equals the clue). Does not require the Numbers variable type.",
+	"categories": ["lines", "hashi", "counting"],
+	"requiredSpaces": ["lines"],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": true,
+			"valueLabel": "Bridges"
+		}
+	]
+}

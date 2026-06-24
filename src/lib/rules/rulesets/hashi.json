@@ -1,0 +1,7 @@
+{
+	"id": "hashi",
+	"name": "Hashiwokakero",
+	"description": "Hashi (Bridges) puzzle rules: islands connected by straight parallel bridges, each island's total bridge count must match its clue, and all islands must form one connected group",
+	"categories": ["hashi", "lines", "connectivity"],
+	"rules": ["hashi-bridge", "lines-used-connected", "hashi-island"]
+}
