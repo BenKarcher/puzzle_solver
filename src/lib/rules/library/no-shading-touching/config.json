@@ -1,0 +1,8 @@
+{
+	"id": "no-shading-touching",
+	"name": "No Shading Touching",
+	"description": "No two shaded cells can share an edge",
+	"categories": ["shading", "heyawake"],
+	"requiredSpaces": ["shading"],
+	"scope": "global"
+}

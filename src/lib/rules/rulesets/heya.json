@@ -1,0 +1,15 @@
+{
+    "id": "heya",
+    "name": "Heyawake",
+    "description": "Shade some cells such that no run of unshaded cells passes through 2 region borders, no two shaded cells touch, and the unshadedc cells are connected. A number in a region indicates the number of shaded cells in that region",
+    "categories": [
+        "shading",
+        "pencil"
+    ],
+    "rules": [
+        "heya-run-rule",
+        "no-shading-touching",
+        "unshaded-connected",
+        "region-shaded-count"
+    ]
+}
