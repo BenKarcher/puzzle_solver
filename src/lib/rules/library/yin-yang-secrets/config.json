@@ -1,0 +1,8 @@
+{
+	"id": "yin-yang-secrets",
+	"name": "Yin-Yang Secrets",
+	"description": "Derived constraints that massively prune the Yin-Yang search space: no 2×2 checkerboard; border splits into at most 2 colour arcs; parity rules for odd or even side lengths",
+	"categories": ["shading", "yin-yang"],
+	"requiredSpaces": ["shading"],
+	"scope": "global"
+}

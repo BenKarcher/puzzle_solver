@@ -9,6 +9,7 @@
     "rules": [
         "shaded-connected",
         "unshaded-connected",
-        "no-2x2-shading"
+        "no-2x2-shading",
+        "yin-yang-secrets"
     ]
 }
