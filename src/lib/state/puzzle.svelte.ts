@@ -362,6 +362,22 @@ class PuzzleStore {
 		group.cells = group.cells.filter((c) => c.row !== coord.row || c.col !== coord.col);
 	}
 
+	/** Replace a group's cells with every cell that shares the given region ID. */
+	setGroupToRegion(instanceId: string, groupIndex: number, regionId: number): void {
+		this.pushHistory();
+		const instance = this.puzzle.localRules.find((r) => r.id === instanceId);
+		if (!instance) return;
+		const group = instance.groups[groupIndex];
+		if (!group) return;
+		const { rows, cols } = this.puzzle.dimensions;
+		const cells: CellCoord[] = [];
+		for (let r = 0; r < rows; r++)
+			for (let c = 0; c < cols; c++)
+				if (this.puzzle.cells[r][c].regionId === regionId)
+					cells.push({ row: r, col: c });
+		group.cells = cells;
+	}
+
 	toggleCellInGroup(instanceId: string, groupIndex: number, coord: CellCoord): void {
 		const instance = this.puzzle.localRules.find((r) => r.id === instanceId);
 		if (!instance) return;

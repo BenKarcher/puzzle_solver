@@ -172,13 +172,8 @@ export async function solveForSolution(
 
 	const promise = wrapSolveProgress(
 		model.solve({ options: { solver, statistics: !!onStats } }),
-		(e: SolutionMessage) => {
-			if (e.output?.json) solution = e.output.json;
-		},
-		(result) => {
-			if (onStats && result.statistics) onStats(result.statistics);
-			return solution;
-		}
+		(e: SolutionMessage) => { if (e.output?.json) solution = e.output.json; },
+		(result) => { if (onStats && result.statistics) onStats(result.statistics); return solution; }
 	);
 
 	return promise;

@@ -1,0 +1,8 @@
+{
+  "id": "heya-run-rule",
+  "name": "No unshaded crun through 3 regions",
+  "description": "No run of unshaded cells can pass two region borders",
+  "categories": ["shading", "heya"],
+  "requiredSpaces": ["shading", "regions"],
+  "scope": "global"
+}

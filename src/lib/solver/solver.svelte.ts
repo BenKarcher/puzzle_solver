@@ -43,6 +43,8 @@ class SolverStore {
 	candidateProgress = $state<CandidateProgress | null>(null);
 	compiledModel = $state<string | null>(null);
 	checkResult = $state<CheckResult | null>(null);
+	/** True when the last solve run was "Find All Solutions" — only then can we claim uniqueness. */
+	isEnumerating = $state(false);
 
 	// Non-reactive internals for solveAll buffering
 	private cancelFn: (() => void) | null = null;
@@ -120,6 +122,7 @@ class SolverStore {
 
 	async solvePuzzle(puzzle: PuzzleState, rules: LoadedRule[]): Promise<void> {
 		this.clear();
+		this.isEnumerating = false;
 		this.status = 'compiling';
 
 		try {
@@ -154,6 +157,7 @@ class SolverStore {
 
 	async solveAllPuzzle(puzzle: PuzzleState, rules: LoadedRule[]): Promise<void> {
 		this.clear();
+		this.isEnumerating = true;
 		this.status = 'compiling';
 
 		try {

@@ -14,6 +14,15 @@ function selectedGroupIsCellless(): boolean {
 	return cfg?.maxSize === 0;
 }
 
+/** True when the currently-edited rule group is a region group (isRegion === true). */
+function selectedGroupIsRegion(): boolean {
+	if (!ui.selectedRuleInstanceId) return false;
+	const inst = puzzleStore.puzzle.localRules.find((r) => r.id === ui.selectedRuleInstanceId);
+	if (!inst) return false;
+	const cfg = getRuleById(inst.ruleId)?.config.groups?.[ui.selectedGroupIndex];
+	return cfg?.isRegion === true;
+}
+
 // Track the shading value being painted during a drag
 let shadingDragValue: boolean | null = null;
 
@@ -297,7 +306,13 @@ export function handleCanvasMouseDown(
 	// Rule group editing takes priority over all other tools.
 	// Cell-less groups (maxSize === 0) fall through to normal selection.
 	if (mode === 'setting' && ui.selectedRuleInstanceId && !selectedGroupIsCellless()) {
-		puzzleStore.toggleCellInGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
+		if (selectedGroupIsRegion()) {
+			// Region groups: one click selects the entire region the cell belongs to
+			const regionId = puzzleStore.getCell(cell.row, cell.col).regionId;
+			puzzleStore.setGroupToRegion(ui.selectedRuleInstanceId, ui.selectedGroupIndex, regionId);
+		} else {
+			puzzleStore.toggleCellInGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
+		}
 		return;
 	}
 

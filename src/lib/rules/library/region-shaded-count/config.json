@@ -1,0 +1,17 @@
+{
+	"id": "region-shaded-count",
+	"name": "Region Shaded Count",
+	"description": "The number indicates how many cells in this region are shaded. Click any cell in the target region to assign it.",
+	"categories": ["shading", "counting", "aqre"],
+	"requiredSpaces": ["shading", "regions"],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": true,
+			"valueLabel": "Shaded",
+			"isRegion": true
+		}
+	]
+}

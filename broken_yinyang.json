@@ -1,0 +1,481 @@
+{
+  "name": "Untitled Puzzle",
+  "dimensions": {
+    "rows": 4,
+    "cols": 4
+  },
+  "solutionSpaces": {
+    "numbers": {
+      "enabled": false,
+      "min": 1,
+      "max": 9
+    },
+    "modifiers": {
+      "enabled": false,
+      "min": 1,
+      "max": 18
+    },
+    "shading": {
+      "enabled": true
+    },
+    "borders": {
+      "enabled": false
+    },
+    "lines": {
+      "enabled": false,
+      "maxLinesPerPair": 1
+    }
+  },
+  "cells": [
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": false,
+        "shadedIsGiven": true,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": true,
+        "shadedIsGiven": true,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": true,
+        "shadedIsGiven": true,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": true,
+        "shadedIsGiven": true,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      }
+    ],
+    [
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      },
+      {
+        "number": null,
+        "numberIsGiven": false,
+        "shaded": null,
+        "shadedIsGiven": false,
+        "pencilMarks": [],
+        "regionId": 0
+      }
+    ]
+  ],
+  "hEdges": [
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ]
+  ],
+  "vEdges": [
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ],
+    [
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      },
+      {
+        "border": null,
+        "borderIsGiven": false,
+        "lines": null,
+        "lineIsGiven": false,
+        "linePencilMarks": []
+      }
+    ]
+  ],
+  "manualGlobalRules": [],
+  "activeRulesets": [
+    "yin-yang"
+  ],
+  "globalRules": [
+    "shaded-connected",
+    "unshaded-connected",
+    "no-2x2-shading"
+  ],
+  "localRules": [],
+  "customRules": [],
+  "favoriteRules": []
+}

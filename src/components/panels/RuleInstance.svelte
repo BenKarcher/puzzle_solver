@@ -38,13 +38,22 @@
 		return false;
 	}
 
-	function groupSizeLabel(cellCount: number, gi: number): string {
+	function groupSizeLabel(group: { cells: { row: number; col: number }[] }, gi: number): string {
 		const cfg = config.groups?.[gi];
-		if (!cfg) return `${cellCount} cells`;
+		if (!cfg) return `${group.cells.length} cells`;
 		if (cfg.maxSize === 0) return 'no cells';
+
+		if (cfg.isRegion) {
+			if (group.cells.length === 0) return 'no region selected';
+			// Look up the regionId from the first cell
+			const first = group.cells[0];
+			const regionId = puzzleStore.puzzle.cells[first.row]?.[first.col]?.regionId ?? '?';
+			return `Region ${regionId} (${group.cells.length} cells)`;
+		}
+
 		const { minSize, maxSize } = cfg;
-		if (maxSize !== null) return `${cellCount} / ${maxSize} cells`;
-		return `${cellCount} cells (min ${minSize})`;
+		if (maxSize !== null) return `${group.cells.length} / ${maxSize} cells`;
+		return `${group.cells.length} cells (min ${minSize})`;
 	}
 
 	function selectGroup(index: number) {
@@ -55,6 +64,15 @@
 		const num = value === '' ? null : parseInt(value);
 		puzzleStore.setGroupValue(instance.id, groupIndex, isNaN(num as number) ? null : num);
 	}
+
+	/** Hint text for the currently-active group */
+	const activeGroupHint = $derived.by(() => {
+		const cfg = config.groups?.[ui.selectedGroupIndex];
+		if (!cfg) return 'Click cells on the grid to add/remove from the selected group';
+		if (cfg.isRegion) return 'Click any cell on the grid to select that cell\'s entire region';
+		if (cfg.maxSize === 0) return 'This group has no cells';
+		return 'Click cells on the grid to add/remove from the selected group';
+	});
 </script>
 
 <div class="instance-editor">
@@ -65,11 +83,13 @@
 		{#each instance.groups as group, gi}
 			{@const cfg = config.groups?.[gi]}
 			{@const isCellless = cfg?.maxSize === 0}
+			{@const isRegion = cfg?.isRegion === true}
 			<div
 				class="group"
 				class:selected={ui.selectedGroupIndex === gi}
 				class:invalid={isGroupInvalid(group, gi)}
 				class:cellless={isCellless}
+				class:region-group={isRegion}
 				style="border-left: 3px solid {isGroupInvalid(group, gi) ? 'rgba(211, 47, 47, 0.7)' : GROUP_COLORS[gi % GROUP_COLORS.length]}"
 				role="button"
 				tabindex="0"
@@ -77,9 +97,17 @@
 				onkeydown={(e) => e.key === 'Enter' && selectGroup(gi)}
 			>
 				<div class="group-header">
-					<span>{cfg?.hasValue && instance.groups.length === 1 ? (cfg.valueLabel ?? 'Group') : `Group ${gi + 1}`}</span>
+					<span>
+						{cfg?.hasValue && instance.groups.length === 1 ? (cfg.valueLabel ?? 'Group') : `Group ${gi + 1}`}
+						{#if isRegion}
+							<span
+								class="region-badge"
+								title="Region group: clicking any cell on the grid selects that cell's entire region"
+							>region</span>
+						{/if}
+					</span>
 					{#if !isCellless}
-						<span class="cell-count">{groupSizeLabel(group.cells.length, gi)}</span>
+						<span class="cell-count">{groupSizeLabel(group, gi)}</span>
 					{/if}
 				</div>
 
@@ -108,7 +136,7 @@
 		{/each}
 	</div>
 
-	<p class="hint">Click cells on the grid to add/remove from the selected group</p>
+	<p class="hint">{activeGroupHint}</p>
 </div>
 
 <style>
@@ -166,6 +194,22 @@
 	.cell-count {
 		font-size: 11px;
 		color: #888;
+		margin-left: auto;
+	}
+
+	.region-badge {
+		display: inline-block;
+		font-size: 9px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.3px;
+		background: #e8f5e9;
+		color: #2e7d32;
+		border: 1px solid #a5d6a7;
+		border-radius: 3px;
+		padding: 1px 4px;
+		vertical-align: middle;
+		cursor: help;
 	}
 
 	.value-input {

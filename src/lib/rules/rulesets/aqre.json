@@ -9,6 +9,6 @@
     "rules": [
         "shaded-connected",
         "no-four-in-a-row",
-        "shaded-cage"
+        "region-shaded-count"
     ]
 }

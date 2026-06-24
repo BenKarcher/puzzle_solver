@@ -81,10 +81,10 @@
 		<div class="results">
 			<p class="count">
 				{solverStore.solutionCount} solution{solverStore.solutionCount !== 1 ? 's' : ''} found{solverStore.status === 'solving' ? ' so far...' : ''}
-				{#if solverStore.status === 'done' && solverStore.solutionCount === 1}
-					<span class="unique-badge" title="The puzzle has exactly one solution">✓ unique</span>
-				{:else if solverStore.status === 'done' && solverStore.solutionCount > 1}
-					<span class="not-unique-badge" title="A well-formed puzzle should have exactly one solution">not unique</span>
+				{#if solverStore.isEnumerating && solverStore.status === 'done' && solverStore.solutionCount === 1}
+					<span class="unique-badge" title="Find All Solutions completed — the puzzle has exactly one solution">✓ unique</span>
+				{:else if solverStore.isEnumerating && solverStore.status === 'done' && solverStore.solutionCount > 1}
+					<span class="not-unique-badge" title="Find All Solutions found multiple solutions — a well-formed puzzle should have exactly one">not unique</span>
 				{/if}
 			</p>
 

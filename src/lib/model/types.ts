@@ -82,6 +82,12 @@ export interface RuleGroupConfig {
 	maxSize: number | null;
 	hasValue: boolean;
 	valueLabel?: string;
+	/**
+	 * When true, clicking any cell on the canvas replaces the whole group with every cell
+	 * that shares the clicked cell's region ID. The solver receives the group cells normally —
+	 * this only changes the editing UX.
+	 */
+	isRegion?: boolean;
 }
 
 export interface RuleConfig {
