@@ -23,6 +23,8 @@ import { ui } from './ui.svelte';
 
 class PuzzleStore {
 	puzzle = $state<PuzzleState>(createBlankPuzzle(9, 9));
+	/** Increments on every edit — watchers use this to detect puzzle changes. */
+	editCount = $state(0);
 
 	get rows(): number {
 		return this.puzzle.dimensions.rows;
@@ -33,6 +35,7 @@ class PuzzleStore {
 	}
 
 	private pushHistory(): void {
+		this.editCount++;
 		history.push(structuredClone($state.snapshot(this.puzzle)));
 	}
 
@@ -240,8 +243,7 @@ class PuzzleStore {
 
 	// ---- Batch operations for solving mode ----
 
-	clearSolveEntries(): void {
-		this.pushHistory();
+	private applyClearSolveEntries(): void {
 		for (let r = 0; r < this.rows; r++) {
 			for (let c = 0; c < this.cols; c++) {
 				const cell = this.puzzle.cells[r][c];
@@ -266,6 +268,17 @@ class PuzzleStore {
 				if (!edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
 			}
 		}
+	}
+
+	/** Clear solve entries and record as a user edit (increments editCount, supports undo). */
+	clearSolveEntries(): void {
+		this.pushHistory();
+		this.applyClearSolveEntries();
+	}
+
+	/** Clear solve entries without registering as a user edit — used by the solver internally. */
+	clearSolveEntriesQuiet(): void {
+		this.applyClearSolveEntries();
 	}
 
 	// ---- Global rules ----

@@ -48,6 +48,16 @@ class SolverStore {
 	/** True when the most recent completed solve found zero solutions. */
 	noSolution = $state(false);
 
+	constructor() {
+		$effect.root(() => {
+			$effect(() => {
+				// Subscribe to puzzle edits; clear no-solution indicator when puzzle changes.
+				puzzleStore.editCount; // reactive dependency
+				this.noSolution = false;
+			});
+		});
+	}
+
 	// Non-reactive internals for solveAll buffering
 	private cancelFn: (() => void) | null = null;
 	private _count = 0;
@@ -107,7 +117,7 @@ class SolverStore {
 		this.checkResult = null;
 		this.noSolution = false;
 		if (hadResults) {
-			puzzleStore.clearSolveEntries();
+			puzzleStore.clearSolveEntriesQuiet();
 		}
 	}
 
@@ -146,7 +156,7 @@ class SolverStore {
 
 			if (this.solutions.length === 0) {
 				this.noSolution = true;
-				puzzleStore.clearSolveEntries();
+				puzzleStore.clearSolveEntriesQuiet();
 			} else {
 				puzzleStore.applySolution(this.solutions[0]);
 			}
@@ -200,7 +210,7 @@ class SolverStore {
 			this.status = 'done';
 			if (this.totalSolutionCount === 0) {
 				this.noSolution = true;
-				puzzleStore.clearSolveEntries();
+				puzzleStore.clearSolveEntriesQuiet();
 			} else if (this.solutions.length > 0) {
 				puzzleStore.applySolution(this.solutions[0]);
 			}
@@ -233,7 +243,7 @@ class SolverStore {
 			this.candidateResult = result;
 			if ((result.solutionCount ?? 1) === 0) {
 				this.noSolution = true;
-				puzzleStore.clearSolveEntries();
+				puzzleStore.clearSolveEntriesQuiet();
 			} else {
 				puzzleStore.applyCandidates(result);
 			}
