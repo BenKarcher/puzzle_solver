@@ -123,8 +123,11 @@
 		</div>
 	{/if}
 
-	{#if solverStore.status === 'done' && solverStore.solutionCount === 0 && !solverStore.candidateResult}
-		<p class="no-solution">No solution found — check that your rules and given clues are consistent.</p>
+	{#if solverStore.noSolution}
+		<div class="no-solution-banner">
+			<span class="no-solution-count">0 solutions</span>
+			<span class="no-solution-hint">No valid solution exists — check that your rules and clues are consistent.</span>
+		</div>
 	{/if}
 
 	{#if solverStore.compiledModel}
@@ -353,11 +356,26 @@
 		color: #666;
 	}
 
-	.no-solution {
-		margin-top: 8px;
-		font-size: 13px;
-		color: #888;
-		font-style: italic;
+	.no-solution-banner {
+		margin-top: 10px;
+		padding: 10px 12px;
+		background: #ffebee;
+		border: 2px solid #d32f2f;
+		border-radius: 5px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.no-solution-count {
+		font-size: 18px;
+		font-weight: 700;
+		color: #c62828;
+	}
+
+	.no-solution-hint {
+		font-size: 12px;
+		color: #b71c1c;
 	}
 
 	.model-details {

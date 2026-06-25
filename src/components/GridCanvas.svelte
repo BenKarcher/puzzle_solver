@@ -142,7 +142,8 @@
 			mode,
 			selectedCells,
 			ruleRenderers,
-			highlightedCells
+			highlightedCells,
+			noSolution: solverStore.noSolution
 		});
 	});
 

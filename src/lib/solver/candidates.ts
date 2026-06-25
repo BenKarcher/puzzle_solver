@@ -22,6 +22,8 @@ export interface CandidateResult {
 	/** Line candidates for horizontal/vertical edges */
 	lineH?: number[][][];
 	lineV?: number[][][];
+	/** Total number of solutions seen during candidate computation */
+	solutionCount?: number;
 }
 
 export interface CandidateProgress {
@@ -307,7 +309,7 @@ export async function findTrueCandidates(
 		total: { ms: (t2 - t0) | 0 },
 	});
 
-	return buildCandidateResult(spaces, possibles);
+	return { ...buildCandidateResult(spaces, possibles), solutionCount: totalSolutionCount };
 }
 
 /**
@@ -357,6 +359,6 @@ async function findTrueCandidatesNative(
 		total: { ms: totalMs | 0 },
 	});
 
-	return buildCandidateResult(spaces, possibles);
+	return { ...buildCandidateResult(spaces, possibles), solutionCount };
 }
 

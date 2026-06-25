@@ -45,6 +45,8 @@ class SolverStore {
 	checkResult = $state<CheckResult | null>(null);
 	/** True when the last solve run was "Find All Solutions" — only then can we claim uniqueness. */
 	isEnumerating = $state(false);
+	/** True when the most recent completed solve found zero solutions. */
+	noSolution = $state(false);
 
 	// Non-reactive internals for solveAll buffering
 	private cancelFn: (() => void) | null = null;
@@ -103,6 +105,7 @@ class SolverStore {
 		this.candidateProgress = null;
 		this.compiledModel = null;
 		this.checkResult = null;
+		this.noSolution = false;
 		if (hadResults) {
 			puzzleStore.clearSolveEntries();
 		}
@@ -142,7 +145,8 @@ class SolverStore {
 			this.cancelFn = null;
 
 			if (this.solutions.length === 0) {
-				this.errorMessage = 'No solution found (unsatisfiable)';
+				this.noSolution = true;
+				puzzleStore.clearSolveEntries();
 			} else {
 				puzzleStore.applySolution(this.solutions[0]);
 			}
@@ -195,7 +199,8 @@ class SolverStore {
 
 			this.status = 'done';
 			if (this.totalSolutionCount === 0) {
-				this.errorMessage = 'No solution found (unsatisfiable)';
+				this.noSolution = true;
+				puzzleStore.clearSolveEntries();
 			} else if (this.solutions.length > 0) {
 				puzzleStore.applySolution(this.solutions[0]);
 			}
@@ -226,7 +231,12 @@ class SolverStore {
 			}, controller.signal, this.selectedSolver);
 			this.cancelFn = null;
 			this.candidateResult = result;
-			puzzleStore.applyCandidates(result);
+			if ((result.solutionCount ?? 1) === 0) {
+				this.noSolution = true;
+				puzzleStore.clearSolveEntries();
+			} else {
+				puzzleStore.applyCandidates(result);
+			}
 			this.status = 'done';
 		} catch (e) {
 			this.cancelFn = null;

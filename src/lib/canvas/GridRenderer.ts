@@ -17,6 +17,7 @@ export interface RenderContext {
 	selectedCells: CellCoord[];
 	ruleRenderers: Map<string, RenderFn>;
 	highlightedCells?: Map<string, string>;
+	noSolution?: boolean;
 }
 
 export interface GridLayout {
@@ -47,7 +48,7 @@ export function renderGrid(
 	canvasHeight: number,
 	renderCtx: RenderContext
 ): GridLayout {
-	const { puzzle, mode, selectedCells, ruleRenderers } = renderCtx;
+	const { puzzle, mode, selectedCells, ruleRenderers, noSolution } = renderCtx;
 	const { rows, cols } = puzzle.dimensions;
 
 	const layout = computeLayout(canvasWidth, canvasHeight, rows, cols);
@@ -80,6 +81,20 @@ export function renderGrid(
 	}
 	drawRulesLayer(ctx, puzzle, ruleRenderers, cellSize, offsetX, offsetY);
 	drawNumbersLayer(ctx, puzzle, mode, cellSize, offsetX, offsetY);
+
+	if (noSolution) {
+		const borderWidth = Math.max(4, Math.round(cellSize * 0.08));
+		ctx.save();
+		ctx.strokeStyle = '#d32f2f';
+		ctx.lineWidth = borderWidth;
+		ctx.strokeRect(
+			offsetX - borderWidth / 2,
+			offsetY - borderWidth / 2,
+			cols * cellSize + borderWidth,
+			rows * cellSize + borderWidth,
+		);
+		ctx.restore();
+	}
 
 	return layout;
 }

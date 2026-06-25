@@ -8,6 +8,7 @@ class UIStore {
 	selectedGroupIndex = $state<number>(0);
 	customRuleEditorOpen = $state(false);
 	customRuleEditing = $state<CustomRuleDefinition | null>(null);
+	ruleBrowserOpen = $state(false);
 	favoriteRules = $state<Set<string>>(new Set());
 	/** One-shot: when set, the value input for this (instanceId, groupIndex=0) autofocuses on render */
 	pendingValueFocus = $state<string | null>(null);
@@ -33,6 +34,9 @@ class UIStore {
 		this.selectedRuleInstanceId = instanceId;
 		this.selectedGroupIndex = groupIndex;
 	}
+
+	openRuleBrowser(): void { this.ruleBrowserOpen = true; }
+	closeRuleBrowser(): void { this.ruleBrowserOpen = false; }
 
 	openCustomRuleEditor(rule: CustomRuleDefinition | null = null): void {
 		this.customRuleEditing = rule;

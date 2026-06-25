@@ -5,6 +5,7 @@
 	import GridCanvas from '../components/GridCanvas.svelte';
 	import Sidebar from '../components/Sidebar.svelte';
 	import CustomRuleEditor from '../components/panels/CustomRuleEditor.svelte';
+	import RuleBrowser from '../components/panels/RuleBrowser.svelte';
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { ui } from '$lib/state/ui.svelte';
 	import { getAllRuleConfigs, getRuleRenderers, syncCustomRules } from '$lib/rules/registry';
@@ -42,6 +43,10 @@
 		<span>Powered by <a href="https://www.minizinc.org/" target="_blank" rel="noopener">MiniZinc</a> (MPL-2.0)</span>
 	</footer>
 </div>
+
+{#if ui.ruleBrowserOpen}
+	<RuleBrowser {ruleConfigs} onclose={() => ui.closeRuleBrowser()} />
+{/if}
 
 {#if ui.customRuleEditorOpen}
 	<CustomRuleEditor

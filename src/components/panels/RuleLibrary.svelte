@@ -247,6 +247,12 @@
 	<details class="library-section" bind:open={libraryOpen}>
 		<summary class="library-header"><h3>Rule Library</h3></summary>
 
+	<div class="library-top-row">
+		<button class="browse-btn" title="Open full rule browser with filters and tag search" onclick={() => ui.openRuleBrowser()}>
+			Browse all rules ↗
+		</button>
+	</div>
+
 	<p class="library-hint">
 		<span class="badge-explain"><span class="rule-badge set-badge">S</span> Set — adds a bundle of related rules at once</span>
 		<span class="badge-explain"><span class="rule-badge global-badge">G</span> Global — on/off for entire grid</span>
@@ -522,6 +528,27 @@
 	}
 
 	.edit-btn:hover { color: #4287f5; }
+
+	.library-top-row {
+		display: flex;
+		justify-content: flex-end;
+		margin-bottom: 6px;
+	}
+
+	.browse-btn {
+		padding: 5px 12px;
+		border: 1px solid #4287f5;
+		background: #e8f0fe;
+		color: #1a73e8;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 12px;
+		font-weight: 500;
+	}
+
+	.browse-btn:hover {
+		background: #d2e3fc;
+	}
 
 	/* ── Library section — collapsible ── */
 	.library-section {

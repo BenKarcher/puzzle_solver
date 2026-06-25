@@ -1,3 +1,1 @@
-seperate solve/set undo buffer. adding pencil marks and especially clicking through solutionsor clicking solve should not populate the undo buffer for givens
-
-true canidates distinguish between no forced shading and no solutions
+true canidates with shading only doesn't distinguish between no solution and no forced cells. Similarly solve with no solutions leaves the current marks in, so if I click solve, find a solution change a given and click solve again and no solution is found, the old solution stays making it look like it found one. So if no solution is found to a puzzle in any of the solve modes I would like to clear the current solution, and maybe highlight the edge of the board red and prominently say 0 solutions in the side.
