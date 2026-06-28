@@ -122,13 +122,8 @@
 	}
 
 	function addLocalRule(rule: RuleConfig) {
-		let sourceCells = selection.cells;
-		if (sourceCells.length === 0 && ui.selectedRuleInstanceId) {
-			const editingInst = puzzleStore.puzzle.localRules.find(
-				(r) => r.id === ui.selectedRuleInstanceId
-			);
-			sourceCells = editingInst?.groups[ui.selectedGroupIndex]?.cells ?? [];
-		}
+		// Only inherit a free selection — if we're leaving a group-edit context, start fresh
+		const sourceCells = ui.selectedRuleInstanceId ? [] : selection.cells;
 
 		const instanceId = puzzleStore.addRuleInstance(rule.id);
 		const firstGroup = rule.groups?.[0];
