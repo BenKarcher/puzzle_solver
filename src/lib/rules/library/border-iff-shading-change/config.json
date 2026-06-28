@@ -1,0 +1,8 @@
+{
+	"id": "border-iff-shading-change",
+	"name": "Border Iff Shading Change",
+	"description": "There is a border edge between two orthogonally adjacent cells if and only if they have opposite shading. Outer boundary edges are not constrained.",
+	"categories": ["nurimaze", "shading", "borders"],
+	"requiredSpaces": ["shading", "borders"],
+	"scope": "global"
+}

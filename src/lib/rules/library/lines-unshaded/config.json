@@ -1,0 +1,8 @@
+{
+	"id": "lines-unshaded",
+	"name": "Lines Unshaded",
+	"description": "Every line must connect two unshaded cells. A line between two cells does not imply those cells are unshaded on its own — this rule enforces that constraint explicitly.",
+	"categories": ["nurimaze", "lines", "shading"],
+	"requiredSpaces": ["lines", "shading"],
+	"scope": "global"
+}

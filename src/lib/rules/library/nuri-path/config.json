@@ -1,0 +1,9 @@
+{
+	"id": "nuri-path",
+	"name": "Nuri Path",
+	"description": "Every cell that is not a Start/Goal marker must have exactly 0 or 2 lines (i.e. is either off the path or a through-cell).",
+	"categories": ["nurimaze", "lines"],
+	"requiredSpaces": ["lines"],
+	"scope": "global",
+	"imports": ["cell-lines"]
+}

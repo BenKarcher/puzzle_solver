@@ -1,0 +1,8 @@
+{
+	"id": "regions-monochrome",
+	"name": "Regions Monochrome",
+	"description": "Every region must be entirely shaded or entirely unshaded — no region may contain both black and white cells.",
+	"categories": ["nurimaze", "shading", "regions"],
+	"requiredSpaces": ["shading", "regions"],
+	"scope": "global"
+}

@@ -1,0 +1,22 @@
+{
+	"id": "nuri-triangle",
+	"name": "Nuri Triangle",
+	"description": "Must be unshaded and may not be on the path",
+	"categories": [
+		"nurimaze",
+		"shading",
+		"lines"
+	],
+	"requiredSpaces": [
+		"shading",
+		"lines"
+	],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": false
+		}
+	]
+}

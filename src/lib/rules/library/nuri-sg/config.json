@@ -1,0 +1,15 @@
+{
+	"id": "nuri-sg",
+	"name": "Nuri Start/Goal",
+	"description": "First cell is S (start), second is G (goal). Both must be unshaded and have exactly one line entering/leaving them.",
+	"categories": ["nurimaze", "shading", "lines"],
+	"requiredSpaces": ["shading", "lines"],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 2,
+			"maxSize": 2,
+			"hasValue": false
+		}
+	]
+}

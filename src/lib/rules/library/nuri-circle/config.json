@@ -1,0 +1,22 @@
+{
+	"id": "nuri-circle",
+	"name": "Nuri Circle",
+	"description": "Must be unshaded and must be on the path",
+	"categories": [
+		"nurimaze",
+		"shading",
+		"lines"
+	],
+	"requiredSpaces": [
+		"shading",
+		"lines"
+	],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": false
+		}
+	]
+}

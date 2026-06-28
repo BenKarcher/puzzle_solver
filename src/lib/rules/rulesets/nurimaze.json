@@ -1,0 +1,18 @@
+{
+	"id": "nurimaze",
+	"name": "Nurimaze",
+	"description": "Shade cells so that: unshaded cells are connected; shaded cells are king-connected to the border; each region is monochromatic; lines form the unique path from S to G through all circle clues, avoiding triangle clues.",
+	"categories": ["nurimaze", "shading", "lines", "connectivity"],
+	"rules": [
+		"regions-monochrome",
+		"unshaded-connected",
+		"black-king-connected-to-edge",
+		"lines-unshaded",
+		"lines-used-connected",
+		"nuri-path",
+		"nuri-sg",
+		"nuri-circle",
+		"nuri-triangle",
+		"no-2x2-shading"
+	]
+}

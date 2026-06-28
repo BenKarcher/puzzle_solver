@@ -1,0 +1,9 @@
+{
+	"id": "black-king-connected-to-edge",
+	"name": "Black King Connected to Edge",
+	"description": "All shaded (black) cells, together with a virtual node representing the grid boundary, form a single king-move connected graph. Equivalently: shaded cells are king-connected and at least one touches the border.",
+	"categories": ["nurimaze", "shading", "connectivity"],
+	"requiredSpaces": ["shading"],
+	"scope": "global",
+	"imports": ["cell-graph"]
+}
