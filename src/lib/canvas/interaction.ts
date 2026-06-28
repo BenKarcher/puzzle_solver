@@ -23,6 +23,24 @@ function selectedGroupIsRegion(): boolean {
 	return cfg?.isRegion === true;
 }
 
+/** True when the currently-edited rule group allows repeated cells. */
+function selectedGroupAllowsRepeats(): boolean {
+	if (!ui.selectedRuleInstanceId) return false;
+	const inst = puzzleStore.puzzle.localRules.find((r) => r.id === ui.selectedRuleInstanceId);
+	if (!inst) return false;
+	const cfg = getRuleById(inst.ruleId)?.config.groups?.[ui.selectedGroupIndex];
+	return cfg?.allowRepeats === true;
+}
+
+/** True when the currently-edited rule group has a value field. */
+function selectedGroupHasValue(): boolean {
+	if (!ui.selectedRuleInstanceId) return false;
+	const inst = puzzleStore.puzzle.localRules.find((r) => r.id === ui.selectedRuleInstanceId);
+	if (!inst) return false;
+	const cfg = getRuleById(inst.ruleId)?.config.groups?.[ui.selectedGroupIndex];
+	return cfg?.hasValue === true;
+}
+
 // Track the shading value being painted during a drag
 let shadingDragValue: boolean | null = null;
 
@@ -309,10 +327,14 @@ export function handleCanvasMouseDown(
 	// Rule group editing takes priority over all other tools.
 	// Cell-less groups (maxSize === 0) fall through to normal selection.
 	if (mode === 'setting' && ui.selectedRuleInstanceId && !selectedGroupIsCellless()) {
+		if (e.button !== 0) return; // right-click is handled by contextmenu handler
 		if (selectedGroupIsRegion()) {
 			// Region groups: one click selects the entire region the cell belongs to
 			const regionId = puzzleStore.getCell(cell.row, cell.col).regionId;
 			puzzleStore.setGroupToRegion(ui.selectedRuleInstanceId, ui.selectedGroupIndex, regionId);
+		} else if (selectedGroupAllowsRepeats()) {
+			// Repeating groups: left-click always appends (right-click removes last occurrence)
+			puzzleStore.addCellToGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
 		} else {
 			puzzleStore.toggleCellInGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
 		}
@@ -464,6 +486,16 @@ export function handleCanvasContextMenu(
 	const y = e.clientY - rect.top;
 	const isGiven = mode === 'setting';
 
+	// allowRepeats group editing: right-click removes the last occurrence of a cell
+	if (mode === 'setting' && ui.selectedRuleInstanceId && selectedGroupAllowsRepeats()) {
+		const cell = pixelToCell(x, y, layout, rows, cols);
+		if (cell) {
+			e.preventDefault();
+			puzzleStore.removeLastOccurrenceFromGroup(ui.selectedRuleInstanceId, ui.selectedGroupIndex, cell);
+		}
+		return;
+	}
+
 	// Region draw-edges: right-click toggles an edge
 	if (mode === 'region-edit' && ui.regionDrawEdges) {
 		const edge = pixelToEdge(x, y, layout, rows, cols);
@@ -505,10 +537,41 @@ export function handleKeyDown(e: KeyboardEvent): void {
 	// Don't handle keys when an overlay (e.g. custom rule editor) is open
 	if (ui.customRuleEditorOpen) return;
 
+	// Group value typing: when editing a group with a value field and a digit key is pressed
+	// outside a focused input, accumulate keystrokes into the group value.
+	// This runs BEFORE the "skip if input focused" guard so it handles the case where
+	// the user clicked a cell (blurring the input) then types a new value.
+	const activeEl = document.activeElement;
+	const inputFocused = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement;
+	if (
+		!inputFocused &&
+		ui.selectedRuleInstanceId &&
+		selectedGroupHasValue() &&
+		e.key >= '0' && e.key <= '9' &&
+		!e.ctrlKey && !e.metaKey && !e.altKey
+	) {
+		e.preventDefault();
+		const now = Date.now();
+		const buf = ui.groupValueBuffer;
+		const isContinuation =
+			buf !== null &&
+			buf.instanceId === ui.selectedRuleInstanceId &&
+			buf.groupIndex === ui.selectedGroupIndex &&
+			now - buf.ts < 1500;
+		const newStr = isContinuation ? buf.str + e.key : e.key;
+		ui.groupValueBuffer = {
+			instanceId: ui.selectedRuleInstanceId,
+			groupIndex: ui.selectedGroupIndex,
+			str: newStr,
+			ts: now
+		};
+		puzzleStore.setGroupValue(ui.selectedRuleInstanceId, ui.selectedGroupIndex, parseInt(newStr));
+		return;
+	}
+
 	// Don't steal keys from focused text inputs — let the user type in
 	// search bars, name fields, etc. Cells remain selected.
-	const active = document.activeElement;
-	if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+	if (inputFocused) return;
 
 	// Escape: deselect rule instance
 	if (e.key === 'Escape') {

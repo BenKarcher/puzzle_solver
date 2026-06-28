@@ -71,6 +71,7 @@
 		if (!cfg) return 'Click cells on the grid to add/remove from the selected group';
 		if (cfg.isRegion) return 'Click any cell on the grid to select that cell\'s entire region';
 		if (cfg.maxSize === 0) return 'This group has no cells';
+		if (cfg.allowRepeats) return 'Left-click to append a cell (repeats allowed); right-click to remove the last occurrence';
 		return 'Click cells on the grid to add/remove from the selected group';
 	});
 </script>
@@ -118,6 +119,7 @@
 							<input
 								type="number"
 								value={group.value ?? ''}
+								placeholder={cfg?.defaultValue !== undefined ? String(cfg.defaultValue) : ''}
 								bind:this={firstValueInput}
 								oninput={(e) => updateGroupValue(gi, (e.target as HTMLInputElement).value)}
 								onclick={(e) => e.stopPropagation()}
@@ -126,6 +128,7 @@
 							<input
 								type="number"
 								value={group.value ?? ''}
+								placeholder={cfg?.defaultValue !== undefined ? String(cfg.defaultValue) : ''}
 								oninput={(e) => updateGroupValue(gi, (e.target as HTMLInputElement).value)}
 								onclick={(e) => e.stopPropagation()}
 							/>

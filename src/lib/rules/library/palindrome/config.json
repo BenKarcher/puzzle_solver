@@ -14,7 +14,8 @@
 		{
 			"minSize": 2,
 			"maxSize": null,
-			"hasValue": false
+			"hasValue": false,
+			"allowRepeats": true
 		}
 	]
 }

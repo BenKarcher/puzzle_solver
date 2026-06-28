@@ -82,12 +82,19 @@ export interface RuleGroupConfig {
 	maxSize: number | null;
 	hasValue: boolean;
 	valueLabel?: string;
+	/** Pre-filled value when a new instance is created; cleared on first user keypress. */
+	defaultValue?: number;
 	/**
 	 * When true, clicking any cell on the canvas replaces the whole group with every cell
 	 * that shares the clicked cell's region ID. The solver receives the group cells normally —
 	 * this only changes the editing UX.
 	 */
 	isRegion?: boolean;
+	/**
+	 * When true, the same cell may appear multiple times in the group (e.g. palindromes,
+	 * region-sum lines). Left-click always appends; right-click removes the last occurrence.
+	 */
+	allowRepeats?: boolean;
 }
 
 export interface RuleConfig {

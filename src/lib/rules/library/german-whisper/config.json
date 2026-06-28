@@ -1,7 +1,7 @@
 {
-	"id": "german-whisper",
-	"name": "German Whisper Line",
-	"description": "Consecutive cells on the line must differ by at least 5",
+	"id": "whisper",
+	"name": "German Whisper",
+	"description": "Adjacent cells on the line must differ by at least N (default 5)",
 	"categories": [
 		"sudoku",
 		"line"
@@ -14,7 +14,10 @@
 		{
 			"minSize": 2,
 			"maxSize": null,
-			"hasValue": false
+			"hasValue": true,
+			"defaultValue": 5,
+			"valueLabel": "Difference",
+			"allowRepeats": true
 		}
 	]
 }

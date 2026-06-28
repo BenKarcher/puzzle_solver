@@ -8,7 +8,7 @@ export default function render(
 	const group = instance.groups[0];
 	if (!group || group.cells.length < 2) return;
 
-	const color = '#22c55e';
+	const color = '#25f92c';
 	const width = helpers.cellSize * 0.15;
 
 	for (let i = 0; i < group.cells.length - 1; i++) {

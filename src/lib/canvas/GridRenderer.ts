@@ -18,6 +18,8 @@ export interface RenderContext {
 	ruleRenderers: Map<string, RenderFn>;
 	highlightedCells?: Map<string, string>;
 	noSolution?: boolean;
+	/** Maps "row,col" → 1-based position indices within the active group (multiple for repeated cells). */
+	groupIndexOverlay?: Map<string, number[]>;
 }
 
 export interface GridLayout {
@@ -48,7 +50,7 @@ export function renderGrid(
 	canvasHeight: number,
 	renderCtx: RenderContext
 ): GridLayout {
-	const { puzzle, mode, selectedCells, ruleRenderers, noSolution } = renderCtx;
+	const { puzzle, mode, selectedCells, ruleRenderers, noSolution, groupIndexOverlay } = renderCtx;
 	const { rows, cols } = puzzle.dimensions;
 
 	const layout = computeLayout(canvasWidth, canvasHeight, rows, cols);
@@ -81,6 +83,20 @@ export function renderGrid(
 	}
 	drawRulesLayer(ctx, puzzle, ruleRenderers, cellSize, offsetX, offsetY);
 	drawNumbersLayer(ctx, puzzle, mode, cellSize, offsetX, offsetY);
+
+	if (groupIndexOverlay && groupIndexOverlay.size > 0) {
+		const fontSize = Math.max(8, Math.round(cellSize * 0.22));
+		ctx.font = `bold ${fontSize}px sans-serif`;
+		ctx.textAlign = 'right';
+		ctx.textBaseline = 'bottom';
+		ctx.fillStyle = 'rgba(30, 30, 30, 0.6)';
+		for (const [key, indices] of groupIndexOverlay) {
+			const [r, c] = key.split(',').map(Number);
+			const x = offsetX + (c + 1) * cellSize - 2;
+			const y = offsetY + (r + 1) * cellSize - 2;
+			ctx.fillText(indices.join(','), x, y);
+		}
+	}
 
 	if (noSolution) {
 		const borderWidth = Math.max(4, Math.round(cellSize * 0.08));

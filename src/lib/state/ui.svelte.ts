@@ -12,6 +12,8 @@ class UIStore {
 	favoriteRules = $state<Set<string>>(new Set());
 	/** One-shot: when set, the value input for this (instanceId, groupIndex=0) autofocuses on render */
 	pendingValueFocus = $state<string | null>(null);
+	/** Tracks in-progress number-key typing for a group value field (used by handleKeyDown). */
+	groupValueBuffer = $state<{ instanceId: string; groupIndex: number; str: string; ts: number } | null>(null);
 	/** Whether the region editor is in "draw edges" sub-mode vs the default "paint" mode */
 	regionDrawEdges = $state(false);
 

@@ -137,13 +137,30 @@
 			}
 		}
 
+		// Group index overlay: shows 1-based position of each cell in the active group
+		let groupIndexOverlay: Map<string, number[]> | undefined;
+		if (selectedInstanceId) {
+			const inst = puzzle.localRules.find((r) => r.id === selectedInstanceId);
+			const group = inst?.groups[selectedGroupIdx];
+			if (group && group.cells.length > 0) {
+				groupIndexOverlay = new Map();
+				group.cells.forEach((cell, idx) => {
+					const key = `${cell.row},${cell.col}`;
+					const existing = groupIndexOverlay!.get(key);
+					if (existing) existing.push(idx + 1);
+					else groupIndexOverlay!.set(key, [idx + 1]);
+				});
+			}
+		}
+
 		layout = renderGrid(ctx, canvasWidth, canvasHeight, {
 			puzzle,
 			mode,
 			selectedCells,
 			ruleRenderers,
 			highlightedCells,
-			noSolution: solverStore.noSolution
+			noSolution: solverStore.noSolution,
+			groupIndexOverlay
 		});
 	});
 

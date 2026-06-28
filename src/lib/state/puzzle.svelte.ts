@@ -336,9 +336,9 @@ class PuzzleStore {
 		const id = nanoid();
 		const rule = getRuleById(ruleId);
 		const groupCount = rule?.config.groups?.length ?? 1;
-		const groups: RuleGroup[] = Array.from({ length: groupCount }, () => ({
+		const groups: RuleGroup[] = Array.from({ length: groupCount }, (_, gi) => ({
 			cells: [],
-			value: null
+			value: rule?.config.groups?.[gi]?.defaultValue ?? null
 		}));
 		const instance: RuleInstance = { ruleId, id, groups };
 		this.puzzle.localRules = [...this.puzzle.localRules, instance];
@@ -355,15 +355,34 @@ class PuzzleStore {
 		if (!instance) return;
 		const group = instance.groups[groupIndex];
 		if (!group) return;
-		const exists = group.cells.some((c) => c.row === coord.row && c.col === coord.col);
-		if (exists) return;
 		// Enforce per-group maxSize; maxSize === 0 means cell-less (reject entirely)
 		const rule = getRuleById(instance.ruleId);
-		const maxSize = rule?.config.groups?.[groupIndex]?.maxSize;
+		const groupCfg = rule?.config.groups?.[groupIndex];
+		const maxSize = groupCfg?.maxSize;
 		if (maxSize === 0) return;
 		if (maxSize !== null && maxSize !== undefined && group.cells.length >= maxSize) return;
+		// Reject duplicates unless allowRepeats is set
+		if (!groupCfg?.allowRepeats) {
+			const exists = group.cells.some((c) => c.row === coord.row && c.col === coord.col);
+			if (exists) return;
+		}
 		this.pushHistory();
 		group.cells = [...group.cells, { ...coord }];
+	}
+
+	removeLastOccurrenceFromGroup(instanceId: string, groupIndex: number, coord: CellCoord): void {
+		const instance = this.puzzle.localRules.find((r) => r.id === instanceId);
+		if (!instance) return;
+		const group = instance.groups[groupIndex];
+		if (!group) return;
+		let lastIdx = -1;
+		for (let i = group.cells.length - 1; i >= 0; i--) {
+			const c = group.cells[i];
+			if (c.row === coord.row && c.col === coord.col) { lastIdx = i; break; }
+		}
+		if (lastIdx === -1) return;
+		this.pushHistory();
+		group.cells = group.cells.filter((_, i) => i !== lastIdx);
 	}
 
 	removeCellFromGroup(instanceId: string, groupIndex: number, coord: CellCoord): void {
