@@ -6,6 +6,7 @@
 	import Sidebar from '../components/Sidebar.svelte';
 	import CustomRuleEditor from '../components/panels/CustomRuleEditor.svelte';
 	import RuleBrowser from '../components/panels/RuleBrowser.svelte';
+	import Quickstart from '../components/Quickstart.svelte';
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { ui } from '$lib/state/ui.svelte';
 	import { getAllRuleConfigs, getRuleRenderers, syncCustomRules } from '$lib/rules/registry';
@@ -27,11 +28,15 @@
 <div class="app">
 	<TopBar />
 	<div class="main">
-		<div class="editor">
-			<Toolbar />
-			<GridCanvas {ruleRenderers} />
-		</div>
-		<Sidebar {ruleConfigs} />
+		{#if ui.mode === 'quickstart'}
+			<Quickstart />
+		{:else}
+			<div class="editor">
+				<Toolbar />
+				<GridCanvas {ruleRenderers} />
+			</div>
+			<Sidebar {ruleConfigs} />
+		{/if}
 	</div>
 	<footer class="footer">
 		<span>Puzzle Solver</span>

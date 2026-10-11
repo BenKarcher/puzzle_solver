@@ -1,0 +1,17 @@
+{
+	"id": "akari-clue",
+	"name": "Akari Clue",
+	"description": "The number says exactly how many of the cell's 4 orthogonal neighbors contain a light. Bind the light layer; place the clue on wall cells.",
+	"categories": ["akari", "shading", "counting"],
+	"requiredSpaces": ["coordinates"],
+	"wholeGrids": ["shading"],
+	"scope": "local",
+	"groups": [
+		{
+			"minSize": 1,
+			"maxSize": null,
+			"hasValue": true,
+			"valueLabel": "Lights"
+		}
+	]
+}

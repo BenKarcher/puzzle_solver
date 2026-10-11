@@ -5,9 +5,7 @@
 	"categories": [
 		"latin-square"
 	],
-	"requiredSpaces": [
-		"shading"
-	],
+	"requiredSpaces": [],
 	"scope": "local",
 	"groups": [
 		{
@@ -18,7 +16,7 @@
 		}
 	],
 	"predicateName": "n_shaded_per_row",
-	"imports": [
-		"alldifferent"
+	"wholeGrids": [
+		"shading"
 	]
 }

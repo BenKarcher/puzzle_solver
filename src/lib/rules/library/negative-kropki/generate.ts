@@ -1,4 +1,4 @@
-import type { PuzzleState } from '$lib/model/types';
+import type { GeneratorContext, PuzzleState } from '$lib/model/types';
 
 /**
  * Combined negative constraint for kropki dots (consecutive + ratio).
@@ -10,7 +10,8 @@ import type { PuzzleState } from '$lib/model/types';
  * because the pair 1,2 satisfies BOTH consecutive and ratio. A combined negative
  * means unmarked pairs satisfy neither condition.
  */
-export default function generate(puzzle: PuzzleState): string[] {
+export default function generate(puzzle: PuzzleState, ctx: GeneratorContext): string[] {
+	const [arr] = ctx.bindings[0].arrays;
 	const { rows, cols } = puzzle.dimensions;
 
 	// Collect all cell pairs covered by consecutive-pairs or ratio-dot
@@ -31,8 +32,8 @@ export default function generate(puzzle: PuzzleState): string[] {
 		for (let c = 0; c < cols - 1; c++) {
 			const key = `${r},${c}-${r},${c + 1}`;
 			if (!covered.has(key)) {
-				const a = `values[${r + 1},${c + 1}]`;
-				const b = `values[${r + 1},${c + 2}]`;
+				const a = `${arr}[${r + 1},${c + 1}]`;
+				const b = `${arr}[${r + 1},${c + 2}]`;
 				lines.push(
 					`constraint not (abs(${a} - ${b}) = 1 \\/ ${a} = 2*${b} \\/ ${b} = 2*${a});`
 				);
@@ -45,8 +46,8 @@ export default function generate(puzzle: PuzzleState): string[] {
 		for (let c = 0; c < cols; c++) {
 			const key = `${r},${c}-${r + 1},${c}`;
 			if (!covered.has(key)) {
-				const a = `values[${r + 1},${c + 1}]`;
-				const b = `values[${r + 2},${c + 1}]`;
+				const a = `${arr}[${r + 1},${c + 1}]`;
+				const b = `${arr}[${r + 2},${c + 1}]`;
 				lines.push(
 					`constraint not (abs(${a} - ${b}) = 1 \\/ ${a} = 2*${b} \\/ ${b} = 2*${a});`
 				);

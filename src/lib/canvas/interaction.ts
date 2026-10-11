@@ -1,9 +1,15 @@
-import type { CellCoord, EdgeCoord, AppMode, ActiveTool } from '$lib/model/types';
+import type { CellCoord, EdgeCoord, VariableInstance } from '$lib/model/types';
 import type { GridLayout } from './GridRenderer';
 import { puzzleStore } from '$lib/state/puzzle.svelte';
 import { selection } from '$lib/state/selection.svelte';
 import { ui } from '$lib/state/ui.svelte';
 import { getRuleById } from '$lib/rules/registry';
+
+/** The variable instance the grid tools currently edit (null when none) */
+function activeVar(): VariableInstance | null {
+	if (!ui.activeVarId) return null;
+	return puzzleStore.getVariable(ui.activeVarId) ?? null;
+}
 
 /** True when the currently-edited rule group is cell-less (maxSize === 0). */
 function selectedGroupIsCellless(): boolean {
@@ -41,7 +47,7 @@ function selectedGroupHasValue(): boolean {
 	return cfg?.hasValue === true;
 }
 
-// Track the shading value being painted during a drag
+// Track the boolean value being painted during a drag
 let shadingDragValue: boolean | null = null;
 
 // Node-based drag state for borders
@@ -93,11 +99,11 @@ function borderNodesToEdge(
 	const dr = b.row - a.row;
 	const dc = b.col - a.col;
 	if (dr === 0 && Math.abs(dc) === 1) {
-		// Horizontal edge: hEdges[row][min(col)]
+		// Horizontal edge: h[row][min(col)]
 		return { row: a.row, col: Math.min(a.col, b.col), direction: 'h' };
 	}
 	if (dc === 0 && Math.abs(dr) === 1) {
-		// Vertical edge: vEdges[min(row)][col]
+		// Vertical edge: v[min(row)][col]
 		return { row: Math.min(a.row, b.row), col: a.col, direction: 'v' };
 	}
 	return null; // Not adjacent
@@ -113,11 +119,11 @@ function lineNodesToEdge(
 	const dr = b.row - a.row;
 	const dc = b.col - a.col;
 	if (dr === 0 && Math.abs(dc) === 1) {
-		// Cells side by side → vertical edge: vEdges[row][max(col)]
+		// Cells side by side → vertical edge: v[row][max(col)]
 		return { row: a.row, col: Math.max(a.col, b.col), direction: 'v' };
 	}
 	if (dc === 0 && Math.abs(dr) === 1) {
-		// Cells above/below → horizontal edge: hEdges[max(row)][col]
+		// Cells above/below → horizontal edge: h[max(row)][col]
 		return { row: Math.max(a.row, b.row), col: a.col, direction: 'h' };
 	}
 	return null; // Not adjacent
@@ -156,16 +162,13 @@ export function pixelToEdge(
 	let bestDist = Infinity;
 	let best: EdgeCoord | null = null;
 
-	// Check horizontal edges: hEdges[r][c] = edge going right from node (r,c)
-	// Nodes are at row boundaries: r = 0..rows, edge goes from x=c*cellSize to x=(c+1)*cellSize at y=r*cellSize
+	// Check horizontal edges: h[r][c] = edge going right from node (r,c)
 	for (let r = 0; r <= rows; r++) {
 		const edgeY = r * cellSize;
 		const distY = Math.abs(relY - edgeY);
 		if (distY > threshold) continue;
-		// Which column segment?
 		const c = Math.floor(relX / cellSize);
 		if (c < 0 || c >= cols) continue;
-		// Distance to the edge segment midpoint
 		const midX = (c + 0.5) * cellSize;
 		const dist = Math.sqrt((relX - midX) ** 2 + distY ** 2);
 		if (dist < bestDist) {
@@ -174,8 +177,7 @@ export function pixelToEdge(
 		}
 	}
 
-	// Check vertical edges: vEdges[r][c] = edge going down from node (r,c)
-	// Nodes are at column boundaries: c = 0..cols, edge goes from y=r*cellSize to y=(r+1)*cellSize at x=c*cellSize
+	// Check vertical edges: v[r][c] = edge going down from node (r,c)
 	for (let c = 0; c <= cols; c++) {
 		const edgeX = c * cellSize;
 		const distX = Math.abs(relX - edgeX);
@@ -212,7 +214,6 @@ export function pixelToLine(
 	let bestDist = Infinity;
 	let best: EdgeCoord | null = null;
 
-	// Find which cell the point is in
 	const cellCol = Math.floor(relX / cellSize);
 	const cellRow = Math.floor(relY / cellSize);
 	if (cellRow < 0 || cellRow >= rows || cellCol < 0 || cellCol >= cols) return null;
@@ -220,12 +221,6 @@ export function pixelToLine(
 	const centerX = (cellCol + 0.5) * cellSize;
 	const centerY = (cellRow + 0.5) * cellSize;
 
-	// Check connections to adjacent cells
-	// Right neighbor: line between (cellRow, cellCol) and (cellRow, cellCol+1)
-	// This corresponds to vEdges[cellRow][cellCol+1] (but line arrays are interior only)
-	// Check 4 neighbors — map to edge storage:
-	// Cells side by side (dc≠0): boundary at vEdges[row][max(col,nc)]
-	// Cells above/below (dr≠0): boundary at hEdges[max(row,nr)][col]
 	const neighbors = [
 		{ dr: 0, dc: 1 },  // right
 		{ dr: 0, dc: -1 }, // left
@@ -248,12 +243,10 @@ export function pixelToLine(
 			bestDist = dist;
 			if (dc !== 0) {
 				// Horizontal connection (cells side by side) → vertical edge
-				const edgeCol = Math.max(cellCol, nc); // the node column between them
-				best = { row: cellRow, col: edgeCol, direction: 'v' };
+				best = { row: cellRow, col: Math.max(cellCol, nc), direction: 'v' };
 			} else {
 				// Vertical connection (cells above/below) → horizontal edge
-				const edgeRow = Math.max(cellRow, nr); // the node row between them
-				best = { row: edgeRow, col: cellCol, direction: 'h' };
+				best = { row: Math.max(cellRow, nr), col: cellCol, direction: 'h' };
 			}
 		}
 	}
@@ -270,7 +263,7 @@ export function handleCanvasMouseDown(
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
 	const mode = ui.mode;
-	const tool = ui.activeTool;
+	const tool = activeVar();
 
 	// Region draw-edges mode: node-based drag identical to border tool but writes region edges
 	if (mode === 'region-edit' && ui.regionDrawEdges) {
@@ -288,7 +281,7 @@ export function handleCanvasMouseDown(
 	// Skip both when the user is editing a rule group — group cell assignment takes priority.
 	const editingGroup = mode === 'setting' && !!ui.selectedRuleInstanceId && !selectedGroupIsCellless();
 
-	if (!editingGroup && (mode === 'setting' || mode === 'solving') && tool === 'border') {
+	if (!editingGroup && (mode === 'setting' || mode === 'solving') && tool?.kind === 'border') {
 		const node = closestBorderNode(x, y, layout, rows, cols);
 		if (!node) return;
 		lastBorderNode = node;
@@ -298,7 +291,7 @@ export function handleCanvasMouseDown(
 		return;
 	}
 
-	if (!editingGroup && (mode === 'setting' || mode === 'solving') && tool === 'line') {
+	if (!editingGroup && (mode === 'setting' || mode === 'solving') && tool?.kind === 'line') {
 		const node = closestLineNode(x, y, layout, rows, cols);
 		if (!node) return;
 		lastLineNode = node;
@@ -341,24 +334,25 @@ export function handleCanvasMouseDown(
 		return;
 	}
 
-	// In setting/solving mode with shading tool, toggle shading on click
-	if ((mode === 'setting' || mode === 'solving') && tool === 'shading') {
+	// In setting/solving mode with a boolean tool, cycle the value on click
+	if ((mode === 'setting' || mode === 'solving') && tool?.kind === 'boolean') {
 		const isGiven = mode === 'setting';
-		const currentCell = puzzleStore.getCell(cell.row, cell.col);
+		const s = puzzleStore.getCellVar(tool.id, cell);
+		if (!s) return;
 
 		// In solving mode, don't modify givens
-		if (mode === 'solving' && currentCell.shadedIsGiven) return;
+		if (mode === 'solving' && s.isGiven) return;
 
 		// Determine what the click would set, then use that for the whole drag
-		if (currentCell.shaded === true) {
+		if (s.value === true) {
 			shadingDragValue = false; // shaded -> unshaded
-		} else if (currentCell.shaded === false) {
+		} else if (s.value === false) {
 			shadingDragValue = null; // unshaded -> clear
 		} else {
 			shadingDragValue = true; // clear -> shaded
 		}
 
-		puzzleStore.setCellShading(cell, shadingDragValue, isGiven);
+		puzzleStore.setCellVar(tool.id, cell, shadingDragValue, isGiven);
 		selection.clearSelection();
 		selection.startDrag();
 		return;
@@ -382,7 +376,7 @@ export function handleCanvasMouseMove(
 	const y = e.clientY - rect.top;
 
 	const mode = ui.mode;
-	const tool = ui.activeTool;
+	const tool = activeVar();
 
 	// Region draw-edges drag: toggle interior edges and auto-renumber
 	if (mode === 'region-edit' && ui.regionDrawEdges && lastBorderNode) {
@@ -395,49 +389,45 @@ export function handleCanvasMouseMove(
 		if (edge.direction === 'h' && (edge.row === 0 || edge.row === rows)) { lastBorderNode = node; return; }
 		if (edge.direction === 'v' && (edge.col === 0 || edge.col === cols)) { lastBorderNode = node; return; }
 
-		const currentEdge = puzzleStore.getEdge(edge);
-		if (!currentEdge) { lastBorderNode = node; return; }
-
 		if (borderDragValue === null) {
-			borderDragValue = currentEdge.border === true ? null : true;
+			borderDragValue = puzzleStore.getRegionEdge(edge) ? null : true;
 		}
-		puzzleStore.setEdgeBorder(edge, borderDragValue, false);
+		puzzleStore.setRegionEdge(edge, borderDragValue === true);
 		puzzleStore.numberRegionsQuiet();
 		lastBorderNode = node;
 		return;
 	}
 
 	// Border drag: draw edge when moving to a new neighboring node
-	if ((mode === 'setting' || mode === 'solving') && tool === 'border' && lastBorderNode) {
+	if ((mode === 'setting' || mode === 'solving') && tool?.kind === 'border' && lastBorderNode) {
 		const node = closestBorderNode(x, y, layout, rows, cols);
 		if (!node || (node.row === lastBorderNode.row && node.col === lastBorderNode.col)) return;
 		const edge = borderNodesToEdge(lastBorderNode, node);
 		if (!edge) { lastBorderNode = node; return; } // not adjacent, update node but skip
-		const currentEdge = puzzleStore.getEdge(edge);
-		if (!currentEdge) { lastBorderNode = node; return; }
+		const s = puzzleStore.getEdgeVar(tool.id, edge);
+		if (!s) { lastBorderNode = node; return; }
 		const isGiven = mode === 'setting';
-		if (mode === 'solving' && currentEdge.borderIsGiven) { lastBorderNode = node; return; }
+		if (mode === 'solving' && s.isGiven) { lastBorderNode = node; return; }
 		// Determine drag mode on first edge drawn
 		if (borderDragValue === null) {
-			borderDragValue = currentEdge.border === true ? null : true;
+			borderDragValue = s.value === true ? null : true;
 		}
-		puzzleStore.setEdgeBorder(edge, borderDragValue, isGiven);
+		puzzleStore.setEdgeVar(tool.id, edge, borderDragValue, isGiven);
 		lastBorderNode = node;
 		return;
 	}
 
 	// Line drag: increment edge when moving to a new neighboring cell center
-	if ((mode === 'setting' || mode === 'solving') && tool === 'line' && lastLineNode) {
+	if ((mode === 'setting' || mode === 'solving') && tool?.kind === 'line' && lastLineNode) {
 		const node = closestLineNode(x, y, layout, rows, cols);
 		if (!node || (node.row === lastLineNode.row && node.col === lastLineNode.col)) return;
 		const edge = lineNodesToEdge(lastLineNode, node);
 		if (!edge) { lastLineNode = node; return; }
-		const currentEdge = puzzleStore.getEdge(edge);
-		if (!currentEdge) { lastLineNode = node; return; }
+		const s = puzzleStore.getEdgeVar(tool.id, edge);
+		if (!s) { lastLineNode = node; return; }
 		const isGiven = mode === 'setting';
-		if (mode === 'solving' && currentEdge.lineIsGiven) { lastLineNode = node; return; }
-		const maxLines = puzzleStore.puzzle.solutionSpaces.lines.maxLinesPerPair;
-		puzzleStore.incrementEdgeLines(edge, maxLines, isGiven);
+		if (mode === 'solving' && s.isGiven) { lastLineNode = node; return; }
+		puzzleStore.incrementEdgeLines(tool.id, edge, isGiven);
 		lastLineNode = node;
 		return;
 	}
@@ -445,17 +435,18 @@ export function handleCanvasMouseMove(
 	const cell = pixelToCell(x, y, layout, rows, cols);
 	if (!cell) return;
 
-	// Drag shading — apply the same value determined on mousedown
-	if ((mode === 'setting' || mode === 'solving') && tool === 'shading') {
+	// Drag boolean painting — apply the same value determined on mousedown
+	if ((mode === 'setting' || mode === 'solving') && tool?.kind === 'boolean') {
 		const isGiven = mode === 'setting';
-		const currentCell = puzzleStore.getCell(cell.row, cell.col);
+		const s = puzzleStore.getCellVar(tool.id, cell);
+		if (!s) return;
 
 		// In solving mode, don't modify givens
-		if (mode === 'solving' && currentCell.shadedIsGiven) return;
+		if (mode === 'solving' && s.isGiven) return;
 
 		// Only apply if the cell isn't already the target value
-		if (currentCell.shaded !== shadingDragValue) {
-			puzzleStore.setCellShading(cell, shadingDragValue, isGiven);
+		if (s.value !== shadingDragValue) {
+			puzzleStore.setCellVar(tool.id, cell, shadingDragValue, isGiven);
 		}
 		return;
 	}
@@ -477,7 +468,7 @@ export function handleCanvasContextMenu(
 	layout: GridLayout
 ): void {
 	const mode = ui.mode;
-	const tool = ui.activeTool;
+	const tool = activeVar();
 	if (mode !== 'setting' && mode !== 'solving' && mode !== 'region-edit') return;
 
 	const { rows, cols } = puzzleStore.puzzle.dimensions;
@@ -502,34 +493,32 @@ export function handleCanvasContextMenu(
 		if (!edge) return;
 		if (edge.direction === 'h' && (edge.row === 0 || edge.row === rows)) return;
 		if (edge.direction === 'v' && (edge.col === 0 || edge.col === cols)) return;
-		const currentEdge = puzzleStore.getEdge(edge);
-		if (!currentEdge) return;
 		e.preventDefault();
-		puzzleStore.setEdgeBorder(edge, currentEdge.border === true ? null : true, false);
+		puzzleStore.setRegionEdge(edge, !puzzleStore.getRegionEdge(edge));
 		puzzleStore.numberRegionsQuiet();
 		return;
 	}
 
-	if (tool === 'border') {
+	if (tool?.kind === 'border') {
 		const edge = pixelToEdge(x, y, layout, rows, cols);
 		if (!edge) return;
-		const currentEdge = puzzleStore.getEdge(edge);
-		if (!currentEdge) return;
-		if (mode === 'solving' && currentEdge.borderIsGiven) return;
+		const s = puzzleStore.getEdgeVar(tool.id, edge);
+		if (!s) return;
+		if (mode === 'solving' && s.isGiven) return;
 		e.preventDefault();
 		// Toggle: if already false (X), remove it; otherwise set to false
-		puzzleStore.setEdgeBorder(edge, currentEdge.border === false ? null : false, isGiven);
+		puzzleStore.setEdgeVar(tool.id, edge, s.value === false ? null : false, isGiven);
 	}
 
-	if (tool === 'line') {
+	if (tool?.kind === 'line') {
 		const edge = pixelToLine(x, y, layout, rows, cols);
 		if (!edge) return;
-		const currentEdge = puzzleStore.getEdge(edge);
-		if (!currentEdge) return;
-		if (mode === 'solving' && currentEdge.lineIsGiven) return;
+		const s = puzzleStore.getEdgeVar(tool.id, edge);
+		if (!s) return;
+		if (mode === 'solving' && s.isGiven) return;
 		e.preventDefault();
 		// Toggle: if already 0 (X), remove it; otherwise set to 0 (X)
-		puzzleStore.setEdgeLines(edge, currentEdge.lines === 0 ? null : 0, isGiven);
+		puzzleStore.setEdgeVar(tool.id, edge, s.value === 0 ? null : 0, isGiven);
 	}
 }
 
@@ -573,11 +562,9 @@ export function handleKeyDown(e: KeyboardEvent): void {
 	// search bars, name fields, etc. Cells remain selected.
 	if (inputFocused) return;
 
-	// Escape: deselect rule instance
+	// Escape: deselect any selected rule/ruleset
 	if (e.key === 'Escape') {
-		if (ui.selectedRuleInstanceId) {
-			ui.selectRuleInstance(null);
-		}
+		ui.clearRuleSelection();
 		selection.clearSelection();
 		return;
 	}
@@ -595,7 +582,7 @@ export function handleKeyDown(e: KeyboardEvent): void {
 	}
 
 	const mode = ui.mode;
-	const tool = ui.activeTool;
+	const tool = activeVar();
 	const cells = selection.cells;
 
 	if (cells.length === 0) return;
@@ -637,7 +624,6 @@ export function handleKeyDown(e: KeyboardEvent): void {
 	const num = parseInt(e.key);
 	if (!isNaN(num) && num >= 0 && num <= 9) {
 		e.preventDefault();
-		const { min, max } = puzzleStore.puzzle.solutionSpaces.numbers;
 
 		if (mode === 'region-edit') {
 			if (!ui.regionDrawEdges) {
@@ -648,23 +634,7 @@ export function handleKeyDown(e: KeyboardEvent): void {
 			return;
 		}
 
-		if (!puzzleStore.puzzle.solutionSpaces.numbers.enabled) return;
-		if (num < min || num > max) return;
-
-		const isGiven = mode === 'setting';
-		const isPencilMark = e.ctrlKey || e.metaKey;
-
-		for (const cell of cells) {
-			const currentCell = puzzleStore.getCell(cell.row, cell.col);
-			// In solving mode, don't overwrite givens
-			if (mode === 'solving' && currentCell.numberIsGiven) continue;
-
-			if (isPencilMark && mode === 'solving') {
-				puzzleStore.togglePencilMark(cell, num);
-			} else {
-				puzzleStore.setCellNumber(cell, num, isGiven);
-			}
-		}
+		applyNumberInput(tool, cells, num, mode === 'setting', e.ctrlKey || e.metaKey);
 		return;
 	}
 
@@ -683,5 +653,32 @@ export function handleKeyDown(e: KeyboardEvent): void {
 		}
 
 		selection.selectCell({ row: newRow, col: newCol }, e.shiftKey);
+	}
+}
+
+/** Write a number value (or pencil mark) into the active number variable for the selection. */
+export function applyNumberInput(
+	tool: VariableInstance | null,
+	cells: CellCoord[],
+	num: number,
+	isGiven: boolean,
+	isPencilMark: boolean
+): void {
+	if (!tool || tool.kind !== 'number') return;
+	const min = tool.min ?? 1;
+	const max = tool.max ?? 9;
+	if (num < min || num > max) return;
+
+	for (const cell of cells) {
+		const s = puzzleStore.getCellVar(tool.id, cell);
+		if (!s) continue;
+		// In solving mode, don't overwrite givens
+		if (!isGiven && s.isGiven) continue;
+
+		if (isPencilMark && !isGiven) {
+			puzzleStore.toggleMark(tool.id, cell, num);
+		} else {
+			puzzleStore.setCellVar(tool.id, cell, num, isGiven);
+		}
 	}
 }

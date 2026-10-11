@@ -3,7 +3,9 @@
 	import { ui } from '$lib/state/ui.svelte';
 	import { selection } from '$lib/state/selection.svelte';
 	import { isCustomRule, getAllRulesets } from '$lib/rules/registry';
-	import type { RuleConfig, RulesetConfig } from '$lib/model/types';
+	import { bindableOccurrences } from '$lib/model/variables';
+	import { rulesetRuleIds } from '$lib/rules/rulesets';
+	import type { RuleConfig, RulesetConfig, VarKind } from '$lib/model/types';
 
 	interface Props {
 		ruleConfigs: RuleConfig[];
@@ -31,37 +33,26 @@
 		return [...tags].sort();
 	});
 
-	// ── Space-based availability ───────────────────────────────────────────────
+	// ── Variable-based availability ────────────────────────────────────────────
 
-	function getEnabledSpaces(): Set<string> {
-		const s = new Set<string>();
-		const spaces = puzzleStore.puzzle.solutionSpaces;
-		if (spaces.numbers.enabled) { s.add('digits'); s.add('values'); }
-		if (spaces.modifiers.enabled) s.add('modifier');
-		if (spaces.shading.enabled) s.add('shading');
-		if (spaces.borders.enabled) s.add('borders');
-		if (spaces.lines.enabled) s.add('lines');
-		s.add('regions');
-		s.add('positions');
-		return s;
+	function kindCount(kind: VarKind): number {
+		return puzzleStore.puzzle.variables.filter((v) => v.kind === kind).length;
 	}
 
-	function rulesetRequiredSpaces(rs: RulesetConfig): string[] {
-		const spaces = new Set<string>();
-		for (const id of rs.rules) {
-			const cfg = ruleConfigs.find((r) => r.id === id);
-			cfg?.requiredSpaces.forEach((s) => spaces.add(s));
-		}
-		return [...spaces];
+	function ruleAvailable(rule: RuleConfig): boolean {
+		return bindableOccurrences(rule).every((kind) => kindCount(kind) > 0);
+	}
+
+	function needsBindingPick(rule: RuleConfig): boolean {
+		return bindableOccurrences(rule).some((kind) => kindCount(kind) > 1);
 	}
 
 	// ── Filtering ─────────────────────────────────────────────────────────────
 
 	const filteredRules = $derived.by(() => {
 		if (scopeFilter === 'set') return [];
-		const enabledSpaces = getEnabledSpaces();
 		return ruleConfigs.filter((rule) => {
-			if (!rule.requiredSpaces.every((sp) => enabledSpaces.has(sp))) return false;
+			if (!ruleAvailable(rule)) return false;
 			if (scopeFilter === 'global' && rule.scope !== 'global') return false;
 			if (scopeFilter === 'local' && rule.scope !== 'local') return false;
 			if (tagFilter && !rule.categories.includes(tagFilter)) return false;
@@ -79,9 +70,11 @@
 
 	const filteredRulesets = $derived.by(() => {
 		if (scopeFilter === 'global' || scopeFilter === 'local') return [];
-		const enabledSpaces = getEnabledSpaces();
 		return allRulesets.filter((rs) => {
-			if (!rulesetRequiredSpaces(rs).every((s) => enabledSpaces.has(s))) return false;
+			const members = rulesetRuleIds(rs)
+				.map((id) => ruleConfigs.find((r) => r.id === id))
+				.filter((r): r is RuleConfig => !!r);
+			if (!members.every(ruleAvailable)) return false;
 			if (tagFilter && !rs.categories.includes(tagFilter)) return false;
 			if (searchQuery) {
 				const q = searchQuery.toLowerCase();
@@ -89,7 +82,7 @@
 					rs.name.toLowerCase().includes(q) ||
 					rs.description.toLowerCase().includes(q) ||
 					rs.categories.some((c) => c.toLowerCase().includes(q)) ||
-					rs.rules.some((id) => {
+					rulesetRuleIds(rs).some((id) => {
 						const cfg = ruleConfigs.find((r) => r.id === id);
 						return cfg?.name.toLowerCase().includes(q);
 					})
@@ -104,17 +97,22 @@
 	// ── State helpers ─────────────────────────────────────────────────────────
 
 	function isGlobalEnabled(ruleId: string): boolean {
-		return puzzleStore.puzzle.globalRules.includes(ruleId);
+		return puzzleStore.puzzle.globalRules.some((a) => a.ruleId === ruleId);
 	}
 
 	function isRulesetActive(rulesetId: string): boolean {
-		return puzzleStore.puzzle.activeRulesets.includes(rulesetId);
+		return puzzleStore.isRulesetActive(rulesetId);
 	}
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
-	function toggleGlobalRule(ruleId: string) {
-		puzzleStore.toggleGlobalRule(ruleId);
+	function toggleOrAddGlobalRule(rule: RuleConfig) {
+		if (needsBindingPick(rule)) {
+			// Add with default bindings; rebind by clicking the entry in the active rules list
+			puzzleStore.addGlobalRule(rule.id);
+		} else {
+			puzzleStore.toggleGlobalRule(rule.id);
+		}
 	}
 
 	function toggleRuleset(rulesetId: string) {
@@ -227,7 +225,7 @@
 					</div>
 					<p class="card-desc">{rs.description}</p>
 					<div class="card-members">
-						{#each rs.rules as ruleId}
+						{#each rulesetRuleIds(rs) as ruleId}
 							{@const cfg = ruleConfigs.find((r) => r.id === ruleId)}
 							{#if cfg}
 								<span class="member-chip">{cfg.name}</span>
@@ -268,10 +266,12 @@
 						{#if rule.scope === 'global'}
 							<button
 								class="action-btn"
-								class:action-on={isEnabled}
-								title={isEnabled ? 'Enabled — click to disable' : 'Enable for the whole grid'}
-								onclick={() => toggleGlobalRule(rule.id)}
-							>{isEnabled ? 'On' : 'Off'}</button>
+								class:action-on={!needsBindingPick(rule) && isEnabled}
+								title={needsBindingPick(rule)
+									? 'Add this rule bound to the selected variables (can be added multiple times)'
+									: isEnabled ? 'Enabled — click to disable' : 'Enable for the whole grid'}
+								onclick={() => toggleOrAddGlobalRule(rule)}
+							>{needsBindingPick(rule) ? 'Add' : isEnabled ? 'On' : 'Off'}</button>
 						{:else}
 							<button
 								class="action-btn"
@@ -574,5 +574,18 @@
 		color: #1a73e8;
 		border-color: #4287f5;
 		font-weight: 600;
+	}
+
+	.binding-picks {
+		display: flex;
+		gap: 4px;
+		flex-wrap: wrap;
+	}
+
+	.binding-select {
+		font-size: 11px;
+		padding: 2px 4px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
 	}
 </style>

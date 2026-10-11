@@ -2,7 +2,7 @@ import type { PuzzleState, LoadedRule, CellCoord } from '$lib/model/types';
 import { compilePuzzle, compilePuzzleForCheck } from './compiler';
 import { solve, solveAll, checkSatisfiable } from './worker';
 import { findTrueCandidates, type CandidateResult, type CandidateProgress } from './candidates';
-import { solutionKey } from './variable-spaces';
+import { buildVariableSpaces, solutionKey } from './variable-spaces';
 import { puzzleStore } from '$lib/state/puzzle.svelte';
 
 export interface CheckResult {
@@ -183,6 +183,9 @@ class SolverStore {
 			this._count = 0;
 			this._stored = [];
 			this._seenKeys = new Set();
+			const decisionFields = buildVariableSpaces(puzzle)
+				.filter((sp) => !sp.isConstant)
+				.map((sp) => sp.solField);
 
 			// Start periodic UI sync
 			this.startTicker();
@@ -191,7 +194,7 @@ class SolverStore {
 				onSolution: (sol) => {
 					// Deduplicate: auxiliary variables can produce multiple
 					// solver solutions with identical decision variable values.
-					const key = solutionKey(sol);
+					const key = solutionKey(sol, decisionFields);
 					if (this._seenKeys!.has(key)) return;
 					this._seenKeys!.add(key);
 					this._count++;
@@ -264,11 +267,13 @@ class SolverStore {
 		this.checkResult = null;
 		const { rows, cols } = puzzle.dimensions;
 
-		// Step 1: Check all number cells are filled
-		if (puzzle.solutionSpaces.numbers.enabled) {
+		// Step 1: Check all number-variable cells are filled
+		for (const v of puzzle.variables) {
+			if (v.kind !== 'number' || v.constant) continue;
+			const grid = puzzle.varData[v.id]?.cells;
 			for (let r = 0; r < rows; r++) {
 				for (let c = 0; c < cols; c++) {
-					if (puzzle.cells[r][c].number === null) {
+					if (grid?.[r]?.[c]?.value === null) {
 						this.checkResult = {
 							status: 'incomplete',
 							message: 'Some numbers have not yet been filled in.',
@@ -297,12 +302,12 @@ class SolverStore {
 			// Step 3: UNSAT — find which rules are violated
 			const violations: CheckResult['violations'] = [];
 
-			// Check each global rule individually
-			for (const ruleId of puzzle.globalRules) {
-				const rule = rules.find((r) => r.config.id === ruleId);
+			// Check each global rule application individually
+			for (const app of puzzle.globalRules) {
+				const rule = rules.find((r) => r.config.id === app.ruleId);
 				if (!rule) continue;
 
-				const testModel = compilePuzzleForCheck(puzzle, rules, new Set([ruleId]));
+				const testModel = compilePuzzleForCheck(puzzle, rules, new Set([app.key]));
 				const ruleSat = await checkSatisfiable(testModel, this.selectedSolver);
 				if (!ruleSat) {
 					violations.push({ ruleName: rule.config.name, cells: [] });
@@ -320,14 +325,6 @@ class SolverStore {
 					const cells = instance.groups.flatMap((g) => g.cells);
 					violations.push({ ruleName: rule.config.name, cells });
 				}
-			}
-
-			// Check custom rules
-			for (const customDef of puzzle.customRules) {
-				// Custom rules are included via their ID in globalRules or localRules
-				// If they're global and already checked above, skip
-				if (puzzle.globalRules.includes(customDef.id)) continue;
-				// Local custom rules are checked via localRules above
 			}
 
 			if (violations.length > 0) {

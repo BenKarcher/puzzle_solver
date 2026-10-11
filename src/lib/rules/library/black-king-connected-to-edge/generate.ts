@@ -1,7 +1,9 @@
-import type { PuzzleState } from '$lib/model/types';
+import type { GeneratorContext, PuzzleState } from '$lib/model/types';
 
-export default function generate(puzzle: PuzzleState): string[] {
+export default function generate(puzzle: PuzzleState, ctx: GeneratorContext): string[] {
 	const { rows, cols } = puzzle.dimensions;
+	const [shaded] = ctx.bindings[0].arrays;
+	const u = ctx.uniq; // suffix so multiple applications don't collide
 	const CELL_N = rows * cols;
 	const VIRTUAL = CELL_N + 1; // 1-indexed MZN node representing the grid boundary
 
@@ -59,10 +61,10 @@ export default function generate(puzzle: PuzzleState): string[] {
 	const E = fromArr.length;
 
 	return [
-		`array[1..${N}] of var bool: bkce_ns = array1d(1..${N}, [shaded[r,c] | r in 1..rows, c in 1..cols] ++ [true]);`,
-		`array[1..${E}] of int: bkce_from = [${fromArr.join(', ')}];`,
-		`array[1..${E}] of int: bkce_to = [${toArr.join(', ')}];`,
-		`array[1..${E}] of var bool: bkce_es = [bkce_ns[bkce_from[e]] /\\ bkce_ns[bkce_to[e]] | e in 1..${E}];`,
-		`constraint connected(bkce_from, bkce_to, bkce_ns, bkce_es);`,
+		`array[1..${N}] of var bool: bkce_ns${u} = array1d(1..${N}, [${shaded}[r,c] | r in 1..rows, c in 1..cols] ++ [true]);`,
+		`array[1..${E}] of int: bkce_from${u} = [${fromArr.join(', ')}];`,
+		`array[1..${E}] of int: bkce_to${u} = [${toArr.join(', ')}];`,
+		`array[1..${E}] of var bool: bkce_es${u} = [bkce_ns${u}[bkce_from${u}[e]] /\\ bkce_ns${u}[bkce_to${u}[e]] | e in 1..${E}];`,
+		`constraint connected(bkce_from${u}, bkce_to${u}, bkce_ns${u}, bkce_es${u});`,
 	];
 }

@@ -7,7 +7,10 @@
 	import RegionEditor from './panels/RegionEditor.svelte';
 	import RuleLibrary from './panels/RuleLibrary.svelte';
 	import RuleInstance from './panels/RuleInstance.svelte';
+	import GlobalRulePanel from './panels/GlobalRulePanel.svelte';
+	import RulesetPanel from './panels/RulesetPanel.svelte';
 	import SolverPanel from './panels/SolverPanel.svelte';
+	import { getRulesetById } from '$lib/rules/registry';
 	import type { RuleConfig } from '$lib/model/types';
 
 	function handleCheckSolution() {
@@ -19,8 +22,7 @@
 	// Clear check result when puzzle state changes
 	let puzzleVersion = $derived(JSON.stringify([
 		puzzleStore.puzzle.cells,
-		puzzleStore.puzzle.hEdges,
-		puzzleStore.puzzle.vEdges
+		puzzleStore.puzzle.varData
 	]));
 
 	$effect(() => {
@@ -44,6 +46,16 @@
 		if (!inst) return null;
 		return ruleConfigs.find((r) => r.id === inst.ruleId) ?? null;
 	}
+
+	function getSelectedGlobalApp() {
+		if (!ui.selectedGlobalRuleKey) return null;
+		return puzzleStore.puzzle.manualGlobalRules.find((a) => a.key === ui.selectedGlobalRuleKey) ?? null;
+	}
+
+	function getSelectedActivation() {
+		if (!ui.selectedRulesetId) return null;
+		return puzzleStore.puzzle.activeRulesets.find((a) => a.rulesetId === ui.selectedRulesetId) ?? null;
+	}
 </script>
 
 <aside class="sidebar">
@@ -54,10 +66,20 @@
 	{:else if ui.mode === 'setting'}
 		{@const selectedInstance = getSelectedInstance()}
 		{@const selectedConfig = getSelectedConfig()}
+		{@const selectedApp = getSelectedGlobalApp()}
+		{@const selectedAppConfig = selectedApp ? (ruleConfigs.find((r) => r.id === selectedApp.ruleId) ?? null) : null}
+		{@const selectedActivation = getSelectedActivation()}
+		{@const selectedRs = selectedActivation ? getRulesetById(selectedActivation.rulesetId) : undefined}
 		{@const noRules = puzzleStore.puzzle.globalRules.length === 0 && puzzleStore.puzzle.localRules.length === 0}
 
 		{#if selectedInstance && selectedConfig}
 			<RuleInstance instance={selectedInstance} config={selectedConfig} />
+			<hr />
+		{:else if selectedApp && selectedAppConfig}
+			<GlobalRulePanel app={selectedApp} config={selectedAppConfig} />
+			<hr />
+		{:else if selectedActivation && selectedRs}
+			<RulesetPanel activation={selectedActivation} rs={selectedRs} />
 			<hr />
 		{/if}
 

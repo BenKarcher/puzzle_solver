@@ -2,8 +2,16 @@
 	"id": "global-number-equals-edges",
 	"name": "Global Number Equals Edges",
 	"description": "Every cell's number equals the count of adjacent true borders",
-	"categories": ["borders", "numbers"],
-	"requiredSpaces": ["values", "borders"],
+	"categories": [
+		"borders",
+		"numbers"
+	],
+	"requiredSpaces": [
+		"digits",
+		"borders"
+	],
 	"scope": "global",
-	"imports": ["cell-borders"]
+	"imports": [
+		"cell-borders"
+	]
 }

@@ -1,11 +1,12 @@
-import type { PuzzleState } from '$lib/model/types';
+import type { GeneratorContext, PuzzleState } from '$lib/model/types';
 
 /**
  * Negative constraint for XV clues.
  * For every pair of orthogonally adjacent cells that does NOT have an
  * x-sum-10 or v-sum-5 instance, emit constraints that they cannot sum to 10 or 5.
  */
-export default function generate(puzzle: PuzzleState): string[] {
+export default function generate(puzzle: PuzzleState, ctx: GeneratorContext): string[] {
+	const [arr] = ctx.bindings[0].arrays;
 	const { rows, cols } = puzzle.dimensions;
 
 	// Collect all cell pairs covered by x-sum-10 or v-sum-5
@@ -27,10 +28,10 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r},${c + 1}`;
 			if (!covered.has(key)) {
 				lines.push(
-					`constraint values[${r + 1},${c + 1}] + values[${r + 1},${c + 2}] != 10;`
+					`constraint ${arr}[${r + 1},${c + 1}] + ${arr}[${r + 1},${c + 2}] != 10;`
 				);
 				lines.push(
-					`constraint values[${r + 1},${c + 1}] + values[${r + 1},${c + 2}] != 5;`
+					`constraint ${arr}[${r + 1},${c + 1}] + ${arr}[${r + 1},${c + 2}] != 5;`
 				);
 			}
 		}
@@ -42,10 +43,10 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r + 1},${c}`;
 			if (!covered.has(key)) {
 				lines.push(
-					`constraint values[${r + 1},${c + 1}] + values[${r + 2},${c + 1}] != 10;`
+					`constraint ${arr}[${r + 1},${c + 1}] + ${arr}[${r + 2},${c + 1}] != 10;`
 				);
 				lines.push(
-					`constraint values[${r + 1},${c + 1}] + values[${r + 2},${c + 1}] != 5;`
+					`constraint ${arr}[${r + 1},${c + 1}] + ${arr}[${r + 2},${c + 1}] != 5;`
 				);
 			}
 		}

@@ -1,11 +1,16 @@
-import type { AppMode, ActiveTool, SidebarTab, CustomRuleDefinition } from '$lib/model/types';
+import type { AppMode, SidebarTab, CustomRuleDefinition } from '$lib/model/types';
 
 class UIStore {
-	mode = $state<AppMode>('grid-setup');
-	activeTool = $state<ActiveTool>('number');
+	mode = $state<AppMode>('quickstart');
+	/** The variable instance the grid tools currently edit (null = none available) */
+	activeVarId = $state<string | null>(null);
 	sidebarTab = $state<SidebarTab>('setup');
 	selectedRuleInstanceId = $state<string | null>(null);
 	selectedGroupIndex = $state<number>(0);
+	/** Selected manual global rule application (by key) — shows its detail panel */
+	selectedGlobalRuleKey = $state<string | null>(null);
+	/** Selected active ruleset (by id) — shows its detail panel */
+	selectedRulesetId = $state<string | null>(null);
 	customRuleEditorOpen = $state(false);
 	customRuleEditing = $state<CustomRuleDefinition | null>(null);
 	ruleBrowserOpen = $state(false);
@@ -28,13 +33,33 @@ class UIStore {
 		}
 	}
 
-	setActiveTool(tool: ActiveTool): void {
-		this.activeTool = tool;
+	setActiveVar(varId: string | null): void {
+		this.activeVarId = varId;
 	}
 
 	selectRuleInstance(instanceId: string | null, groupIndex: number = 0): void {
 		this.selectedRuleInstanceId = instanceId;
 		this.selectedGroupIndex = groupIndex;
+		this.selectedGlobalRuleKey = null;
+		this.selectedRulesetId = null;
+	}
+
+	selectGlobalRule(key: string | null): void {
+		this.selectedGlobalRuleKey = key;
+		this.selectedRuleInstanceId = null;
+		this.selectedRulesetId = null;
+	}
+
+	selectRuleset(rulesetId: string | null): void {
+		this.selectedRulesetId = rulesetId;
+		this.selectedRuleInstanceId = null;
+		this.selectedGlobalRuleKey = null;
+	}
+
+	clearRuleSelection(): void {
+		this.selectedRuleInstanceId = null;
+		this.selectedGlobalRuleKey = null;
+		this.selectedRulesetId = null;
 	}
 
 	openRuleBrowser(): void { this.ruleBrowserOpen = true; }
@@ -61,9 +86,9 @@ class UIStore {
 	}
 
 	/** Auto-favorite all rules used by the current puzzle */
-	autoFavoriteUsedRules(globalRules: string[], localRules: { ruleId: string }[]): void {
+	autoFavoriteUsedRules(globalRuleIds: string[], localRules: { ruleId: string }[]): void {
 		const next = new Set(this.favoriteRules);
-		for (const id of globalRules) next.add(id);
+		for (const id of globalRuleIds) next.add(id);
 		for (const inst of localRules) next.add(inst.ruleId);
 		this.favoriteRules = next;
 	}

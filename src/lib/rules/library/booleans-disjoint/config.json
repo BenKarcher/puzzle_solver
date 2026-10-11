@@ -1,0 +1,8 @@
+{
+	"id": "booleans-disjoint",
+	"name": "No Overlap",
+	"description": "Two boolean layers may never both be true in the same cell (e.g. a light can never sit on a wall). Bind the two layers to choose which pair.",
+	"categories": ["shading", "akari"],
+	"requiredSpaces": ["shading", "shading"],
+	"scope": "global"
+}

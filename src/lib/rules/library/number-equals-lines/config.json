@@ -7,7 +7,7 @@
 		"numbers"
 	],
 	"requiredSpaces": [
-		"values",
+		"digits",
 		"lines"
 	],
 	"scope": "local",

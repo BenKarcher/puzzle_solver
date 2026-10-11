@@ -1,15 +1,27 @@
 {
-    "id": "yin-yang",
-    "name": "Yin-Yang",
-    "description": "Shade some cells such that no 2x2 is entirely shaded or unshaded, and both the shaded and unshaded cells are connected",
-    "categories": [
-        "shading",
-        "pencil"
-    ],
-    "rules": [
-        "shaded-connected",
-        "unshaded-connected",
-        "no-2x2-shading",
-        "yin-yang-secrets"
-    ]
+	"id": "yin-yang",
+	"name": "Yin-Yang",
+	"description": "Shade some cells such that no 2x2 is entirely shaded or unshaded, and both the shaded and unshaded cells are connected",
+	"categories": [
+		"shading",
+		"pencil"
+	],
+	"rules": [
+		"shaded-connected",
+		"unshaded-connected",
+		"no-2x2-shading",
+		"yin-yang-secrets"
+	],
+	"variables": [
+		{
+			"name": "Shading",
+			"kind": "shading",
+			"render": "shading"
+		}
+	],
+	"defaults": {
+		"rows": 9,
+		"cols": 9,
+		"regions": "none"
+	}
 }

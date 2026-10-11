@@ -2,6 +2,27 @@
 	"id": "sudoku",
 	"name": "Sudoku",
 	"description": "Standard sudoku: every row, column, and box contains each digit exactly once",
-	"categories": ["sudoku", "latin-square", "uniqueness"],
-	"rules": ["latin-rows", "latin-cols", "latin-regions"]
+	"categories": [
+		"sudoku",
+		"latin-square",
+		"uniqueness"
+	],
+	"rules": [
+		"latin-rows",
+		"latin-cols",
+		"latin-regions"
+	],
+	"variables": [
+		{
+			"name": "Digits",
+			"kind": "digits",
+			"min": 1,
+			"max": 9
+		}
+	],
+	"defaults": {
+		"rows": 9,
+		"cols": 9,
+		"regions": "rectangular"
+	}
 }

@@ -1,4 +1,4 @@
 include "alldifferent.mzn";
-predicate killer_cage(array[int] of var int: digits, array[int] of var int: values, int: target) =
-    sum(values) = target /\
+predicate killer_cage(array[int] of var int: digits, int: target) =
+    sum(digits) = target /\
     alldifferent(digits);

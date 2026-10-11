@@ -8,8 +8,7 @@
 		"cage"
 	],
 	"requiredSpaces": [
-		"digits",
-		"values"
+		"digits"
 	],
 	"scope": "local",
 	"groups": [

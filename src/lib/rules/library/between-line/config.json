@@ -7,7 +7,7 @@
 		"line"
 	],
 	"requiredSpaces": [
-		"values"
+		"digits"
 	],
 	"scope": "local",
 	"groups": [

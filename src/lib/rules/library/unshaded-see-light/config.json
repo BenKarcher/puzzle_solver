@@ -1,0 +1,8 @@
+{
+	"id": "unshaded-see-light",
+	"name": "All Cells Lit",
+	"description": "Every unshaded cell must see a light along its row or column (no wall in between; a light lights its own cell). First binding = walls (shaded), second = lights.",
+	"categories": ["akari", "shading"],
+	"requiredSpaces": ["shading", "shading"],
+	"scope": "global"
+}

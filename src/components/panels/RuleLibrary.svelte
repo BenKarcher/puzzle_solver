@@ -3,7 +3,9 @@
 	import { ui } from '$lib/state/ui.svelte';
 	import { selection } from '$lib/state/selection.svelte';
 	import { isCustomRule, getAllRulesets } from '$lib/rules/registry';
-	import type { RuleConfig, RulesetConfig } from '$lib/model/types';
+	import { rulesetRuleIds } from '$lib/rules/rulesets';
+	import { bindableOccurrences } from '$lib/model/variables';
+	import type { RuleConfig, RulesetConfig, VarKind } from '$lib/model/types';
 
 	interface Props {
 		ruleConfigs: RuleConfig[];
@@ -18,25 +20,37 @@
 
 	const allRulesets = getAllRulesets();
 
-	// ── Filtering ─────────────────────────────────────────────────────────────
+	// ── Availability ──────────────────────────────────────────────────────────
 
-	function getEnabledSpaces(): Set<string> {
-		const s = new Set<string>();
-		const spaces = puzzleStore.puzzle.solutionSpaces;
-		if (spaces.numbers.enabled) { s.add('digits'); s.add('values'); }
-		if (spaces.modifiers.enabled) s.add('modifier');
-		if (spaces.shading.enabled) s.add('shading');
-		if (spaces.borders.enabled) s.add('borders');
-		if (spaces.lines.enabled) s.add('lines');
-		s.add('regions');
-		s.add('positions');
-		return s;
+	function kindCount(kind: VarKind): number {
+		return puzzleStore.puzzle.variables.filter((v) => v.kind === kind).length;
+	}
+
+	/** A rule is available iff every bindable occurrence has at least one instance of its kind */
+	function ruleAvailable(rule: RuleConfig): boolean {
+		return bindableOccurrences(rule).every((kind) => kindCount(kind) > 0);
+	}
+
+	/** True when at least one of the rule's required kinds has several instances (binding pick needed) */
+	function needsBindingPick(rule: RuleConfig): boolean {
+		return bindableOccurrences(rule).some((kind) => kindCount(kind) > 1);
+	}
+
+	function varName(varId: string): string {
+		return puzzleStore.getVariable(varId)?.name ?? '?';
+	}
+
+	/** Binding summary for an application, shown only when picking matters */
+	function bindingSummary(ruleId: string, bindings: string[]): string {
+		const cfg = ruleConfigs.find((r) => r.id === ruleId);
+		if (!cfg || !bindings.length) return '';
+		if (!needsBindingPick(cfg)) return '';
+		return bindings.map(varName).join(', ');
 	}
 
 	function getAvailableRules(): RuleConfig[] {
-		const enabledSpaces = getEnabledSpaces();
 		const filtered = ruleConfigs.filter((rule) => {
-			if (!rule.requiredSpaces.every((sp) => enabledSpaces.has(sp))) return false;
+			if (!ruleAvailable(rule)) return false;
 			if (searchQuery) {
 				const q = searchQuery.toLowerCase();
 				return (
@@ -52,39 +66,34 @@
 		return filtered;
 	}
 
-	/** Infer required spaces for a ruleset as the union of all its rules' required spaces. */
-	function rulesetRequiredSpaces(rs: RulesetConfig): string[] {
-		const spaces = new Set<string>();
-		for (const id of rs.rules) {
-			const cfg = ruleConfigs.find((r) => r.id === id);
-			cfg?.requiredSpaces.forEach((s) => spaces.add(s));
-		}
-		return [...spaces];
-	}
-
 	function getAvailableRulesets(): RulesetConfig[] {
-		const enabledSpaces = getEnabledSpaces();
 		return allRulesets.filter((rs) => {
-			// Only show if all required spaces are enabled
-			if (!rulesetRequiredSpaces(rs).every((s) => enabledSpaces.has(s))) return false;
+			// Only show if every member rule can be satisfied by the puzzle's variables
+			const members = rulesetRuleIds(rs)
+				.map((id) => ruleConfigs.find((r) => r.id === id))
+				.filter((r): r is RuleConfig => !!r);
+			if (!members.every(ruleAvailable)) return false;
 			if (!searchQuery) return true;
 			const q = searchQuery.toLowerCase();
 			return (
 				rs.name.toLowerCase().includes(q) ||
 				rs.description.toLowerCase().includes(q) ||
 				rs.categories.some((c) => c.toLowerCase().includes(q)) ||
-				rs.rules.some((id) => {
-					const cfg = ruleConfigs.find((r) => r.id === id);
-					return cfg?.name.toLowerCase().includes(q);
-				})
+				members.some((cfg) => cfg.name.toLowerCase().includes(q))
 			);
 		});
 	}
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
-	function toggleGlobalRule(ruleId: string) {
-		puzzleStore.toggleGlobalRule(ruleId);
+	function toggleOrAddGlobalRule(rule: RuleConfig) {
+		if (needsBindingPick(rule)) {
+			// Add with default bindings; click the entry in the active list to rebind
+			const key = puzzleStore.addGlobalRule(rule.id);
+			ui.selectGlobalRule(key);
+		} else {
+			puzzleStore.toggleGlobalRule(rule.id);
+		}
 	}
 
 	function toggleRuleset(rulesetId: string) {
@@ -92,15 +101,11 @@
 	}
 
 	function isGlobalEnabled(ruleId: string): boolean {
-		return puzzleStore.puzzle.globalRules.includes(ruleId);
-	}
-
-	function isManualGlobalEnabled(ruleId: string): boolean {
-		return puzzleStore.puzzle.manualGlobalRules.includes(ruleId);
+		return puzzleStore.puzzle.globalRules.some((a) => a.ruleId === ruleId);
 	}
 
 	function isRulesetActive(rulesetId: string): boolean {
-		return puzzleStore.puzzle.activeRulesets.includes(rulesetId);
+		return puzzleStore.isRulesetActive(rulesetId);
 	}
 
 	function addLocalRule(rule: RuleConfig) {
@@ -167,19 +172,32 @@
 
 	<div class="active-rules-list">
 		<!-- ── Active rulesets (with indented global rules) ── -->
-		{#each puzzleStore.puzzle.activeRulesets as rulesetId}
-			{@const rs = allRulesets.find((r) => r.id === rulesetId)}
+		{#each puzzleStore.puzzle.activeRulesets as activation (activation.rulesetId)}
+			{@const rs = allRulesets.find((r) => r.id === activation.rulesetId)}
 			{#if rs}
-				<div class="ruleset-group">
-					<div class="ruleset-header">
+				<div class="ruleset-group" class:selected={ui.selectedRulesetId === rs.id}>
+					<div
+						class="ruleset-header"
+						title="Rule set — click to view details and variable bindings"
+						role="button"
+						tabindex="0"
+						onclick={() => ui.selectRuleset(ui.selectedRulesetId === rs.id ? null : rs.id)}
+						onkeydown={(e) => e.key === 'Enter' && ui.selectRuleset(rs.id)}
+					>
 						<span class="rule-badge set-badge" title="Rule set">S</span>
 						<span class="ruleset-name">{rs.name}</span>
-						<button class="remove-btn" title="Remove this rule set (and its exclusive rules)" onclick={() => toggleRuleset(rulesetId)}>×</button>
+						<button class="remove-btn" title="Remove this rule set (and its exclusive rules)" onclick={(e) => { e.stopPropagation(); toggleRuleset(rs.id); }}>×</button>
 					</div>
-					{#each rs.rules as ruleId}
+					{#each rulesetRuleIds(rs) as ruleId}
 						{@const cfg = ruleConfigs.find((r) => r.id === ruleId)}
 						{#if cfg && cfg.scope === 'global' && isGlobalEnabled(ruleId)}
-							<div class="active-rule global indented">
+							<div
+								class="active-rule global indented"
+								role="button"
+								tabindex="0"
+								onclick={() => ui.selectRuleset(rs.id)}
+								onkeydown={(e) => e.key === 'Enter' && ui.selectRuleset(rs.id)}
+							>
 								<span class="rule-badge global-badge" title="Global rule">G</span>
 								<span class="rule-name">{cfg.name}</span>
 							</div>
@@ -189,17 +207,29 @@
 			{/if}
 		{/each}
 
-		<!-- ── Individually toggled global rules ── -->
-		{#each puzzleStore.puzzle.manualGlobalRules as ruleId}
-			{@const config = ruleConfigs.find((r) => r.id === ruleId)}
+		<!-- ── Individually added global rule applications ── -->
+		{#each puzzleStore.puzzle.manualGlobalRules as app (app.key)}
+			{@const config = ruleConfigs.find((r) => r.id === app.ruleId)}
 			{#if config}
-				<div class="active-rule global" title="Global rule — applies to the entire grid">
+				{@const summary = bindingSummary(app.ruleId, app.bindings)}
+				<div
+					class="active-rule global"
+					class:selected={ui.selectedGlobalRuleKey === app.key}
+					title="Global rule — click to view details and variable bindings"
+					role="button"
+					tabindex="0"
+					onclick={() => ui.selectGlobalRule(ui.selectedGlobalRuleKey === app.key ? null : app.key)}
+					onkeydown={(e) => e.key === 'Enter' && ui.selectGlobalRule(app.key)}
+				>
 					<span class="rule-badge global-badge" title="Global rule">G</span>
 					<span class="rule-name">{config.name}</span>
-					{#if isCustomRule(ruleId)}
-						<button class="edit-btn" title="Edit" onclick={(e) => editCustomRule(ruleId, e)}>&#9998;</button>
+					{#if summary}
+						<span class="binding-info" title="Bound variables">→ {summary}</span>
 					{/if}
-					<button class="remove-btn" title="Remove this rule" onclick={() => toggleGlobalRule(ruleId)}>×</button>
+					{#if isCustomRule(app.ruleId)}
+						<button class="edit-btn" title="Edit" onclick={(e) => { e.stopPropagation(); editCustomRule(app.ruleId, e); }}>&#9998;</button>
+					{/if}
+					<button class="remove-btn" title="Remove this rule" onclick={(e) => { e.stopPropagation(); puzzleStore.removeGlobalRule(app.key); }}>×</button>
 				</div>
 			{/if}
 		{/each}
@@ -263,43 +293,8 @@
 
 	<div class="rule-list">
 		<!-- 1. Favorited rules -->
-		{#each favoritedRules as rule}
-			<div class="rule-item">
-				<button
-					class="fav-btn"
-					class:favorited={ui.favoriteRules.has(rule.id)}
-					title={ui.favoriteRules.has(rule.id) ? 'Unfavorite' : 'Favorite'}
-					onclick={(e) => toggleFavorite(rule.id, e)}
-				>
-					{ui.favoriteRules.has(rule.id) ? '★' : '☆'}
-				</button>
-				<div class="rule-info">
-					<div class="rule-name-row">
-						<span
-							class="rule-badge {rule.scope === 'global' ? 'global-badge' : 'local-badge'}"
-							title={rule.scope === 'global' ? 'Global: applies to the whole grid' : 'Local: you pick which cells it applies to'}
-						>{rule.scope === 'global' ? 'G' : 'L'}</span>
-						<span class="rule-name">{rule.name}</span>
-					</div>
-					<span class="rule-desc">{rule.description}</span>
-				</div>
-				{#if rule.scope === 'global'}
-					<button
-						class="add-btn"
-						class:active={isGlobalEnabled(rule.id)}
-						title={isGlobalEnabled(rule.id) ? 'Currently enabled — click to disable' : 'Click to enable for the whole grid'}
-						onclick={() => toggleGlobalRule(rule.id)}
-					>
-						{isGlobalEnabled(rule.id) ? 'On' : 'Off'}
-					</button>
-				{:else}
-					<button class="add-btn" title="Add, then click cells on the grid to apply it" onclick={() => addLocalRule(rule)}>Add</button>
-				{/if}
-				{#if isCustomRule(rule.id)}
-					<button class="edit-btn" title="Edit definition" onclick={(e) => editCustomRule(rule.id, e)}>&#9998;</button>
-					<button class="remove-btn" title="Delete" onclick={(e) => removeCustomRule(rule.id, e)}>×</button>
-				{/if}
-			</div>
+		{#each favoritedRules as rule (rule.id)}
+			{@render ruleItem(rule)}
 		{/each}
 
 		<!-- 2. Rule sets -->
@@ -312,7 +307,7 @@
 					</div>
 					<span class="rule-desc">{rs.description}</span>
 					<span class="ruleset-members">
-						{rs.rules.map((id) => ruleConfigs.find((r) => r.id === id)?.name ?? id).join(' · ')}
+						{rulesetRuleIds(rs).map((id) => ruleConfigs.find((r) => r.id === id)?.name ?? id).join(' · ')}
 					</span>
 				</div>
 				<button
@@ -327,43 +322,8 @@
 		{/each}
 
 		<!-- 3. Non-favorited rules -->
-		{#each nonFavoritedRules as rule}
-			<div class="rule-item">
-				<button
-					class="fav-btn"
-					class:favorited={ui.favoriteRules.has(rule.id)}
-					title={ui.favoriteRules.has(rule.id) ? 'Unfavorite' : 'Favorite'}
-					onclick={(e) => toggleFavorite(rule.id, e)}
-				>
-					{ui.favoriteRules.has(rule.id) ? '★' : '☆'}
-				</button>
-				<div class="rule-info">
-					<div class="rule-name-row">
-						<span
-							class="rule-badge {rule.scope === 'global' ? 'global-badge' : 'local-badge'}"
-							title={rule.scope === 'global' ? 'Global: applies to the whole grid' : 'Local: you pick which cells it applies to'}
-						>{rule.scope === 'global' ? 'G' : 'L'}</span>
-						<span class="rule-name">{rule.name}</span>
-					</div>
-					<span class="rule-desc">{rule.description}</span>
-				</div>
-				{#if rule.scope === 'global'}
-					<button
-						class="add-btn"
-						class:active={isGlobalEnabled(rule.id)}
-						title={isGlobalEnabled(rule.id) ? 'Currently enabled — click to disable' : 'Click to enable for the whole grid'}
-						onclick={() => toggleGlobalRule(rule.id)}
-					>
-						{isGlobalEnabled(rule.id) ? 'On' : 'Off'}
-					</button>
-				{:else}
-					<button class="add-btn" title="Add, then click cells on the grid to apply it" onclick={() => addLocalRule(rule)}>Add</button>
-				{/if}
-				{#if isCustomRule(rule.id)}
-					<button class="edit-btn" title="Edit definition" onclick={(e) => editCustomRule(rule.id, e)}>&#9998;</button>
-					<button class="remove-btn" title="Delete" onclick={(e) => removeCustomRule(rule.id, e)}>×</button>
-				{/if}
-			</div>
+		{#each nonFavoritedRules as rule (rule.id)}
+			{@render ruleItem(rule)}
 		{/each}
 	</div>
 
@@ -372,6 +332,48 @@
 	</button>
 	</details>
 </div>
+
+{#snippet ruleItem(rule: RuleConfig)}
+	{@const pickNeeded = needsBindingPick(rule)}
+	<div class="rule-item">
+		<button
+			class="fav-btn"
+			class:favorited={ui.favoriteRules.has(rule.id)}
+			title={ui.favoriteRules.has(rule.id) ? 'Unfavorite' : 'Favorite'}
+			onclick={(e) => toggleFavorite(rule.id, e)}
+		>
+			{ui.favoriteRules.has(rule.id) ? '★' : '☆'}
+		</button>
+		<div class="rule-info">
+			<div class="rule-name-row">
+				<span
+					class="rule-badge {rule.scope === 'global' ? 'global-badge' : 'local-badge'}"
+					title={rule.scope === 'global' ? 'Global: applies to the whole grid' : 'Local: you pick which cells it applies to'}
+				>{rule.scope === 'global' ? 'G' : 'L'}</span>
+				<span class="rule-name">{rule.name}</span>
+			</div>
+			<span class="rule-desc">{rule.description}</span>
+		</div>
+		{#if rule.scope === 'global'}
+			<button
+				class="add-btn"
+				class:active={!pickNeeded && isGlobalEnabled(rule.id)}
+				title={pickNeeded
+					? 'Add this rule (choose which variable it applies to by clicking it in the active list)'
+					: isGlobalEnabled(rule.id) ? 'Currently enabled — click to disable' : 'Click to enable for the whole grid'}
+				onclick={() => toggleOrAddGlobalRule(rule)}
+			>
+				{pickNeeded ? 'Add' : isGlobalEnabled(rule.id) ? 'On' : 'Off'}
+			</button>
+		{:else}
+			<button class="add-btn" title="Add, then click cells on the grid to apply it" onclick={() => addLocalRule(rule)}>Add</button>
+		{/if}
+		{#if isCustomRule(rule.id)}
+			<button class="edit-btn" title="Edit definition" onclick={(e) => editCustomRule(rule.id, e)}>&#9998;</button>
+			<button class="remove-btn" title="Delete" onclick={(e) => removeCustomRule(rule.id, e)}>×</button>
+		{/if}
+	</div>
+{/snippet}
 
 <style>
 	.panel {
@@ -422,6 +424,19 @@
 		padding: 5px 8px;
 		background: #f3e5f5;
 		font-size: 13px;
+		cursor: pointer;
+	}
+
+	.ruleset-header:hover {
+		background: #ead1f0;
+	}
+
+	.ruleset-group.selected {
+		outline: 2px solid #9c36b5;
+	}
+
+	.active-rule.global.selected {
+		outline: 2px solid #4caf50;
 	}
 
 	.ruleset-name {
@@ -483,6 +498,12 @@
 	.group-value {
 		font-size: 11px;
 		color: #666;
+	}
+
+	.binding-info {
+		font-size: 11px;
+		color: #7b1fa2;
+		font-style: italic;
 	}
 
 	/* ── Buttons ── */

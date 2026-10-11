@@ -1,0 +1,61 @@
+{
+	"id": "akari",
+	"name": "Akari (Light Up)",
+	"description": "Place lights on unshaded cells so that every unshaded cell sees a light along its row or column, no two lights see each other, and numbered walls count the lights among their 4 neighbors",
+	"categories": [
+		"akari",
+		"shading"
+	],
+	"variables": [
+		{
+			"name": "Walls",
+			"kind": "shading",
+			"render": "shading",
+			"color": "#333333",
+			"constant": true,
+			"defaultValue": false
+		},
+		{
+			"name": "Lights",
+			"kind": "shading",
+			"render": "objects",
+			"emojis": [
+				"💡"
+			]
+		}
+	],
+	"rules": [
+		{
+			"id": "booleans-disjoint",
+			"bindings": [
+				0,
+				1
+			]
+		},
+		{
+			"id": "lights-dont-see",
+			"bindings": [
+				0,
+				1
+			]
+		},
+		{
+			"id": "unshaded-see-light",
+			"bindings": [
+				0,
+				1
+			]
+		},
+		{
+			"id": "akari-clue",
+			"bindings": [
+				1
+			]
+		}
+	],
+	"defaults": {
+		"rows": 9,
+		"cols": 9,
+		"regions": "none"
+	}
+}

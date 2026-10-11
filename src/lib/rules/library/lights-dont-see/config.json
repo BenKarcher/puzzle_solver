@@ -1,0 +1,8 @@
+{
+	"id": "lights-dont-see",
+	"name": "Lights Don't See Each Other",
+	"description": "No two lights may share a row or column run: for any two lights in the same row or column there must be a wall between them. First binding = walls (shaded), second = lights.",
+	"categories": ["akari", "shading"],
+	"requiredSpaces": ["shading", "shading"],
+	"scope": "global"
+}

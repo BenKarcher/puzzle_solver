@@ -3,7 +3,7 @@
 	import JSZip from 'jszip';
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { getAllLoadedRules, getAvailableImports } from '$lib/rules/registry';
-	import type { CustomRuleDefinition, RequiredSpace, RuleGroupConfig } from '$lib/model/types';
+	import type { CustomRuleDefinition, RequiredSpace, RuleGroupConfig, WholeGridSpace } from '$lib/model/types';
 
 	interface Props {
 		editingRule?: CustomRuleDefinition | null;
@@ -16,19 +16,54 @@
 	// svelte-ignore state_referenced_locally
 	const initial = editingRule;
 
+	const BINDABLE: { space: WholeGridSpace; label: string }[] = [
+		{ space: 'digits', label: 'Numbers' },
+		{ space: 'shading', label: 'Boolean' },
+		{ space: 'borders', label: 'Borders' },
+		{ space: 'lines', label: 'Lines' }
+	];
+
+	function isBindable(s: string): s is WholeGridSpace {
+		return s === 'digits' || s === 'shading' || s === 'borders' || s === 'lines';
+	}
+
+	function bindableLabel(s: WholeGridSpace): string {
+		return BINDABLE.find((b) => b.space === s)?.label ?? s;
+	}
+
 	let name = $state(initial?.name ?? '');
 	let description = $state(initial?.description ?? '');
 	let categoriesText = $state((initial?.categories ?? []).join(', '));
 	let scope = $state<'global' | 'local'>(initial?.scope ?? 'global');
 	let mzn = $state(initial?.mzn ?? '');
-	let reqDigits = $state(initial?.requiredSpaces.includes('digits') ?? true);
-	let reqValues = $state(initial?.requiredSpaces.includes('values') ?? false);
-	let reqModifier = $state(initial?.requiredSpaces.includes('modifier') ?? false);
-	let reqShading = $state(initial?.requiredSpaces.includes('shading') ?? false);
-	let reqBorders = $state(initial?.requiredSpaces.includes('borders') ?? false);
-	let reqLines = $state(initial?.requiredSpaces.includes('lines') ?? false);
+	/**
+	 * Ordered bindable variable occurrences (duplicates allowed — e.g. two Boolean
+	 * entries = the rule receives two independently bound boolean layers).
+	 */
+	let reqSpacesList = $state<WholeGridSpace[]>(
+		initial ? initial.requiredSpaces.filter(isBindable) : ['digits']
+	);
 	let reqRegions = $state(initial?.requiredSpaces.includes('regions') ?? false);
 	let reqPositions = $state(initial?.requiredSpaces.includes('positions') ?? false);
+	let reqCoordinates = $state(initial?.requiredSpaces.includes('coordinates') ?? false);
+	/** Whole-grid args (local rules): entire arrays passed before the group args, in order. Duplicates allowed. */
+	let wholeGridsList = $state<WholeGridSpace[]>([...(initial?.wholeGrids ?? [])]);
+
+	function addReqSpace(s: WholeGridSpace) {
+		reqSpacesList = [...reqSpacesList, s];
+	}
+
+	function removeReqSpace(i: number) {
+		reqSpacesList = reqSpacesList.filter((_, idx) => idx !== i);
+	}
+
+	function addWholeGrid(s: WholeGridSpace) {
+		wholeGridsList = [...wholeGridsList, s];
+	}
+
+	function removeWholeGrid(i: number) {
+		wholeGridsList = wholeGridsList.filter((_, idx) => idx !== i);
+	}
 
 	// Available imports (all .mzn files under src/lib/rules/imports/)
 	const availableImports = getAvailableImports();
@@ -80,14 +115,11 @@
 		categoriesText = (c.categories ?? []).filter((cat) => cat !== 'custom').join(', ');
 		scope = c.scope;
 		mzn = tpl.loaded.mzn ?? '';
-		reqDigits = c.requiredSpaces.includes('digits');
-		reqValues = c.requiredSpaces.includes('values');
-		reqModifier = c.requiredSpaces.includes('modifier');
-		reqShading = c.requiredSpaces.includes('shading');
-		reqBorders = c.requiredSpaces.includes('borders');
-		reqLines = c.requiredSpaces.includes('lines');
+		reqSpacesList = c.requiredSpaces.filter(isBindable);
 		reqRegions = c.requiredSpaces.includes('regions');
 		reqPositions = c.requiredSpaces.includes('positions');
+		reqCoordinates = c.requiredSpaces.includes('coordinates');
+		wholeGridsList = [...(c.wholeGrids ?? [])];
 		groupConfigs = c.groups?.length
 			? c.groups.map((g) => ({ ...g }))
 			: [{ minSize: 1, maxSize: null, hasValue: false }];
@@ -99,19 +131,58 @@
 		name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'my_constraint'
 	);
 
+	/** Suffix repeated occurrences of the same kind: digits, digits2, digits3… */
+	function makeOccNamer(): (base: string) => string {
+		const counts = new Map<string, number>();
+		return (base) => {
+			const n = (counts.get(base) ?? 0) + 1;
+			counts.set(base, n);
+			return n === 1 ? base : `${base}${n}`;
+		};
+	}
+
 	const predicateSignature = $derived.by(() => {
 		const args: string[] = [];
+
+		if (scope === 'global') {
+			// Global rules are predicates over whole arrays, one arg set per occurrence
+			// (in list order — repeated kinds arrive as separately bound variables)
+			const occ = makeOccNamer();
+			for (const s of reqSpacesList) {
+				if (s === 'digits') args.push(`array[int,int] of var int: ${occ('digits')}`);
+				else if (s === 'shading') args.push(`array[int,int] of var bool: ${occ('shaded')}`);
+				else if (s === 'borders') args.push(`array[int,int] of var bool: ${occ('border_h')}`, `array[int,int] of var bool: ${occ('border_v')}`);
+				else args.push(`array[int,int] of var int: ${occ('line_h')}`, `array[int,int] of var int: ${occ('line_v')}`);
+			}
+			return `predicate ${predicateName}(${args.join(', ')})`;
+		}
+
+		// Local rules: whole-grid args first...
+		{
+			const occ = makeOccNamer();
+			for (const s of wholeGridsList) {
+				if (s === 'digits') args.push(`array[int,int] of var int: ${occ('grid_digits')}`);
+				else if (s === 'shading') args.push(`array[int,int] of var bool: ${occ('grid_shaded')}`);
+				else if (s === 'borders') args.push(`array[int,int] of var bool: ${occ('grid_border_h')}`, `array[int,int] of var bool: ${occ('grid_border_v')}`);
+				else args.push(`array[int,int] of var int: ${occ('grid_line_h')}`, `array[int,int] of var int: ${occ('grid_line_v')}`);
+			}
+		}
+
+		// ...then per-group args: [coordinates?] then one cell-ref array per occurrence
 		const multi = groupConfigs.length > 1;
 		for (let i = 0; i < groupConfigs.length; i++) {
 			const g = groupConfigs[i];
 			const suffix = multi ? `_${i + 1}` : '';
 			const isCellless = g.maxSize === 0;
 			if (!isCellless) {
-				if (reqDigits) args.push(`array[int] of var int: digits${suffix}`);
-				if (reqValues) args.push(`array[int] of var int: values${suffix}`);
-				if (reqShading) args.push(`array[int] of var bool: shaded${suffix}`);
-				if (reqBorders) args.push(`array[int, 1..4] of var bool: borders${suffix}`);
-				if (reqLines) args.push(`array[int, 1..4] of var int: lines${suffix}`);
+				const occ = makeOccNamer();
+				if (reqCoordinates) args.push(`array[int] of int: rs${suffix}`, `array[int] of int: cs${suffix}`);
+				for (const s of reqSpacesList) {
+					if (s === 'digits') args.push(`array[int] of var int: ${occ('digits')}${suffix}`);
+					else if (s === 'shading') args.push(`array[int] of var bool: ${occ('shaded')}${suffix}`);
+					else if (s === 'borders') args.push(`array[int, 1..4] of var bool: ${occ('borders')}${suffix}`);
+					else args.push(`array[int, 1..4] of var int: ${occ('lines')}${suffix}`);
+				}
 			}
 			if (g.hasValue) {
 				const label = (g.valueLabel ?? 'value').toLowerCase().replace(/\s+/g, '_') || 'value';
@@ -122,16 +193,16 @@
 	});
 
 	function buildRequiredSpaces(): RequiredSpace[] {
-		const spaces: RequiredSpace[] = [];
-		if (reqDigits) spaces.push('digits');
-		if (reqValues) spaces.push('values');
-		if (reqModifier) spaces.push('modifier');
-		if (reqShading) spaces.push('shading');
-		if (reqBorders) spaces.push('borders');
-		if (reqLines) spaces.push('lines');
+		const spaces: RequiredSpace[] = [...reqSpacesList];
 		if (reqRegions) spaces.push('regions');
 		if (reqPositions) spaces.push('positions');
+		if (reqCoordinates && scope === 'local') spaces.push('coordinates');
 		return spaces;
+	}
+
+	function buildWholeGrids(): WholeGridSpace[] | undefined {
+		if (scope !== 'local') return undefined;
+		return wholeGridsList.length > 0 ? [...wholeGridsList] : undefined;
 	}
 
 	function handleSubmit() {
@@ -148,6 +219,7 @@
 			scope,
 			mzn: mzn.trim(),
 			requiredSpaces: buildRequiredSpaces(),
+			wholeGrids: buildWholeGrids(),
 			groups: scope === 'local'
 				? groupConfigs.map((g) => ({
 						minSize: g.minSize,
@@ -156,7 +228,8 @@
 						valueLabel: g.hasValue ? (g.valueLabel ?? 'Value') : undefined,
 					}))
 				: undefined,
-			predicateName: scope === 'local' ? predicateName : undefined,
+			// Global rules are predicates too now — the compiler calls them with the bound arrays
+			predicateName,
 			imports: selectedImports.size > 0 ? [...selectedImports].sort() : undefined,
 		};
 
@@ -199,6 +272,8 @@
 			requiredSpaces: buildRequiredSpaces(),
 			scope,
 		};
+		const wg = buildWholeGrids();
+		if (wg) config.wholeGrids = wg;
 		if (scope === 'local') {
 			config.groups = groupConfigs.map((g) => ({
 				minSize: g.minSize,
@@ -206,8 +281,8 @@
 				hasValue: g.hasValue,
 				...(g.hasValue ? { valueLabel: g.valueLabel ?? 'Value' } : {}),
 			}));
-			config.predicateName = predicateName;
 		}
+		config.predicateName = predicateName;
 		if (selectedImports.size > 0) {
 			config.imports = [...selectedImports].sort();
 		}
@@ -281,15 +356,74 @@
 		</div>
 
 		<fieldset class="form-row">
-			<legend>Required Solution Spaces</legend>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqDigits} /> Digits</label>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqValues} /> Values</label>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqModifier} /> Modifier</label>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqShading} /> Shading</label>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqBorders} /> Borders</label>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqLines} /> Lines</label>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqRegions} /> Regions</label>
-			<label class="checkbox"><input type="checkbox" bind:checked={reqPositions} /> Positions</label>
+			<legend>Variable Arguments</legend>
+			<p class="hint fieldset-hint">
+				{#if scope === 'global'}
+					Each entry is one variable the rule receives as a whole array, in order.
+					Add the same kind twice to get two independently bound layers (e.g. walls + lights) —
+					the user picks which puzzle variable fills each slot when adding the rule.
+				{:else}
+					Each entry adds one array of the selected cells' values per group, in order.
+					Add the same kind twice to receive two independently bound layers.
+				{/if}
+			</p>
+			<div class="occ-list">
+				{#each reqSpacesList as s, i}
+					<span class="occ-chip">
+						{bindableLabel(s)}
+						<button class="chip-remove" title="Remove" onclick={() => removeReqSpace(i)}>×</button>
+					</span>
+				{/each}
+				{#if reqSpacesList.length === 0}
+					<span class="hint">none</span>
+				{/if}
+			</div>
+			<div class="occ-add-row">
+				{#each BINDABLE as b}
+					<button class="chip-add" onclick={() => addReqSpace(b.space)}>+ {b.label}</button>
+				{/each}
+			</div>
+		</fieldset>
+
+		{#if scope === 'local'}
+			<fieldset class="form-row">
+				<legend>Whole-Grid Arguments</legend>
+				<p class="hint fieldset-hint">
+					The entire bound array(s), passed before the group args — for neighbor-aware rules
+					that look outside the selected cells. Duplicates allowed here too.
+				</p>
+				<div class="occ-list">
+					{#each wholeGridsList as s, i}
+						<span class="occ-chip">
+							{bindableLabel(s)} grid
+							<button class="chip-remove" title="Remove" onclick={() => removeWholeGrid(i)}>×</button>
+						</span>
+					{/each}
+					{#if wholeGridsList.length === 0}
+						<span class="hint">none</span>
+					{/if}
+				</div>
+				<div class="occ-add-row">
+					{#each BINDABLE as b}
+						<button class="chip-add" onclick={() => addWholeGrid(b.space)}>+ {b.label}</button>
+					{/each}
+				</div>
+			</fieldset>
+		{/if}
+
+		<fieldset class="form-row">
+			<legend>Grid Data</legend>
+			<label class="checkbox" title="Emits the region-id array; reference region[r,c] directly in the body">
+				<input type="checkbox" bind:checked={reqRegions} /> Regions
+			</label>
+			<label class="checkbox" title="Emits the per-region position array; reference position[r,c] directly in the body">
+				<input type="checkbox" bind:checked={reqPositions} /> Positions
+			</label>
+			{#if scope === 'local'}
+				<label class="checkbox" title="Each group also receives 1-indexed row/col coordinate arrays for its cells (rs, cs)">
+					<input type="checkbox" bind:checked={reqCoordinates} /> Coordinates
+				</label>
+			{/if}
 		</fieldset>
 
 		{#if availableImports.length > 0}
@@ -384,15 +518,21 @@
 				MiniZinc Code
 				{#if scope === 'global'}
 					<span class="hint">
-						Write bare constraints (e.g. <code>constraint ...</code>).
-						Variables: <code>digits</code>, <code>values</code>, <code>shaded</code>,
-						<code>rows</code>, <code>cols</code>, <code>region</code>, <code>position</code>.
-						<em>Note:</em> <code>values[r,c] = digits[r,c]</code> when the Modifiers
-						solution space is off; when on, <code>values</code> has its own domain and rules
-						constrain how it relates to <code>digits</code>.
+						Define a predicate with this signature (parameter names are yours to choose —
+						only the order matters, matching the Variable Arguments list above).
+						The compiler calls it once per application with the bound variable arrays,
+						so the same rule can be applied several times to different variables.
+						Globals <code>rows</code>, <code>cols</code>, <code>region</code>, <code>position</code>
+						can be referenced directly inside the body; helper variables go in a
+						<code>let &lbrace;...&rbrace; in</code> block.
 					</span>
+					<code class="signature">{predicateSignature}</code>
 				{:else}
-					<span class="hint">Define a predicate with this signature:</span>
+					<span class="hint">
+						Define a predicate with this signature (parameter names are yours to choose —
+						only the order matters): whole-grid args first, then per group its coordinate
+						arrays, cell-value arrays, and value.
+					</span>
 					<code class="signature">{predicateSignature}</code>
 				{/if}
 				<textarea bind:value={mzn} rows="12" spellcheck="false"></textarea>
@@ -492,6 +632,65 @@
 		gap: 6px;
 		font-weight: 400 !important;
 		cursor: pointer;
+	}
+
+	.fieldset-hint {
+		margin: 2px 0 8px;
+	}
+
+	.occ-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-bottom: 8px;
+		min-height: 24px;
+		align-items: center;
+	}
+
+	.occ-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 6px 3px 10px;
+		background: #e8f0fe;
+		border: 1px solid #aecbfa;
+		border-radius: 12px;
+		font-size: 12px;
+		color: #1a56b0;
+	}
+
+	.chip-remove {
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 14px;
+		color: #7a9cd4;
+		padding: 0 2px;
+		line-height: 1;
+	}
+
+	.chip-remove:hover { color: #c62828; }
+
+	.occ-add-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+	}
+
+	.chip-add {
+		padding: 3px 9px;
+		border: 1px dashed #aaa;
+		background: white;
+		border-radius: 12px;
+		cursor: pointer;
+		font-size: 12px;
+		color: #555;
+	}
+
+	.chip-add:hover {
+		background: #f0f7f0;
+		border-color: #4caf50;
+		color: #2e7d32;
 	}
 
 	.imports-details {

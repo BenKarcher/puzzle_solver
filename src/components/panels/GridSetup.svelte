@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
+	import { VAR_COLOR_PALETTE } from '$lib/model/defaults';
+	import type { VarKind, VariableInstance } from '$lib/model/types';
 
 	const presetModules = import.meta.glob('$lib/presets/*.json', {
 		eager: true,
@@ -20,6 +22,8 @@
 
 	let rowsInput = $state(puzzleStore.rows);
 	let colsInput = $state(puzzleStore.cols);
+	/** Which variable's inline color palette is open */
+	let colorPickerFor = $state<string | null>(null);
 
 	function applyDimensions() {
 		if (rowsInput >= 1 && rowsInput <= 30 && colsInput >= 1 && colsInput <= 30) {
@@ -27,60 +31,62 @@
 		}
 	}
 
-	function toggleNumbers() {
-		const current = puzzleStore.puzzle.solutionSpaces.numbers;
-		puzzleStore.updateSolutionSpaces({
-			numbers: { ...current, enabled: !current.enabled }
-		});
+	const KIND_INFO: Record<VarKind, { label: string; hint: string }> = {
+		number: { label: 'Numbers', hint: 'a number in each cell (e.g. 1–9 for sudoku)' },
+		boolean: { label: 'Boolean', hint: 'each cell is on or off (shading, object placement)' },
+		border: { label: 'Borders', hint: 'edges between cells on/off (e.g. Slitherlink)' },
+		line: { label: 'Lines', hint: 'edges carry a count (e.g. Hashiwokakero, paths)' }
+	};
+
+	function renderOptions(v: VariableInstance): { value: string; label: string }[] {
+		switch (v.kind) {
+			case 'number':
+				return [
+					{ value: 'digits', label: 'Digits' },
+					{ value: 'objects', label: 'Objects (emoji)' },
+					{ value: 'invisible', label: 'Invisible' }
+				];
+			case 'boolean':
+				return [
+					{ value: 'shading', label: 'Shading' },
+					{ value: 'objects', label: 'Object (emoji)' },
+					{ value: 'invisible', label: 'Invisible' }
+				];
+			default:
+				return [
+					{ value: 'lines', label: 'Lines' },
+					{ value: 'invisible', label: 'Invisible' }
+				];
+		}
 	}
 
-	function setNumberRange(min: number, max: number) {
-		const current = puzzleStore.puzzle.solutionSpaces.numbers;
-		puzzleStore.updateSolutionSpaces({
-			numbers: { ...current, min, max }
-		});
+	function update(v: VariableInstance, patch: Partial<VariableInstance>) {
+		puzzleStore.updateVariable(v.id, patch);
 	}
 
-	function toggleModifiers() {
-		const current = puzzleStore.puzzle.solutionSpaces.modifiers;
-		puzzleStore.updateSolutionSpaces({
-			modifiers: { ...current, enabled: !current.enabled }
-		});
+	function removeVariable(v: VariableInstance) {
+		const boundApps = puzzleStore.puzzle.manualGlobalRules.filter((a) => a.bindings.includes(v.id)).length;
+		const boundLocal = puzzleStore.puzzle.localRules.filter((i) => i.bindings.includes(v.id)).length;
+		const extra = boundApps + boundLocal > 0
+			? ` ${boundApps + boundLocal} rule(s) bound to it will also be removed.`
+			: '';
+		if (confirm(`Remove variable "${v.name}" and all its values?${extra}`)) {
+			puzzleStore.removeVariable(v.id);
+		}
 	}
 
-	function setModifierRange(min: number, max: number) {
-		const current = puzzleStore.puzzle.solutionSpaces.modifiers;
-		puzzleStore.updateSolutionSpaces({
-			modifiers: { ...current, min, max }
-		});
+	function emojiString(v: VariableInstance): string {
+		return (v.emojis ?? []).join(' ');
 	}
 
-	function toggleShading() {
-		const current = puzzleStore.puzzle.solutionSpaces.shading;
-		puzzleStore.updateSolutionSpaces({
-			shading: { enabled: !current.enabled }
-		});
+	function setEmojis(v: VariableInstance, raw: string) {
+		// Split on whitespace; falls back to splitting into grapheme-ish chunks when unspaced
+		const parts = raw.trim().length === 0 ? [] : raw.trim().split(/\s+/);
+		update(v, { emojis: parts });
 	}
 
-	function toggleBorders() {
-		const current = puzzleStore.puzzle.solutionSpaces.borders;
-		puzzleStore.updateSolutionSpaces({
-			borders: { enabled: !current.enabled }
-		});
-	}
-
-	function toggleLines() {
-		const current = puzzleStore.puzzle.solutionSpaces.lines;
-		puzzleStore.updateSolutionSpaces({
-			lines: { ...current, enabled: !current.enabled }
-		});
-	}
-
-	function setMaxLines(max: number) {
-		const current = puzzleStore.puzzle.solutionSpaces.lines;
-		puzzleStore.updateSolutionSpaces({
-			lines: { ...current, maxLinesPerPair: Math.max(1, max) }
-		});
+	function domainSize(v: VariableInstance): number {
+		return (v.max ?? 9) - (v.min ?? 1) + 1;
 	}
 </script>
 
@@ -89,9 +95,9 @@
 	<div class="intro-card">
 		<p class="intro-title">Build &amp; verify logic puzzles</p>
 		<ol class="intro-steps">
-			<li><strong>Setup</strong> — choose grid size and variable types</li>
+			<li><strong>Setup</strong> — choose grid size and variables</li>
 			<li><strong>Regions</strong> — group cells for box/region rules</li>
-			<li><strong>Design</strong> — enter clue numbers and add rules</li>
+			<li><strong>Design</strong> — enter given clues and add rules</li>
 			<li><strong>Solve</strong> — let the solver verify your puzzle</li>
 		</ol>
 		<p class="intro-note">💡 Start with a preset below, or configure from scratch.</p>
@@ -121,149 +127,173 @@
 		<button class="btn" onclick={applyDimensions}>Apply</button>
 	</div>
 
-	<h3>Variable Types
-		<span class="section-tip" title="Choose what kinds of values the solver will assign to cells. You must enable at least one to proceed.">ⓘ</span>
+	<h3>Variables
+		<span class="section-tip" title="Each variable is one thing the solver decides per cell (or per edge). You can add several of the same kind — e.g. shading plus a star placement, or two colors of line.">ⓘ</span>
 	</h3>
-	<p class="section-hint">What can each cell hold? Enable the types you need for your puzzle.</p>
+	<p class="section-hint">What should the solver decide? Add one entry per independent layer of the puzzle.</p>
 
-	<label class="checkbox-row">
-		<input
-			type="checkbox"
-			checked={puzzleStore.puzzle.solutionSpaces.numbers.enabled}
-			onchange={toggleNumbers}
-		/>
-		<span>
-			Numbers
-			<span class="space-hint">— a digit placed in the cell (e.g. 1–9 for sudoku)</span>
-		</span>
-	</label>
-	{#if puzzleStore.puzzle.solutionSpaces.numbers.enabled}
-		<div class="indent">
-			<div class="row">
-				<label>
-					Min
+	<div class="var-list">
+		{#each puzzleStore.puzzle.variables as v (v.id)}
+			<div class="var-card">
+				<div class="var-header">
+					<span class="kind-badge kind-{v.kind}" title={KIND_INFO[v.kind].hint}>{KIND_INFO[v.kind].label}</span>
 					<input
-						type="number"
-						value={puzzleStore.puzzle.solutionSpaces.numbers.min}
-						min="0"
-						max="9"
-						onchange={(e) => setNumberRange(
-							parseInt((e.target as HTMLInputElement).value),
-							puzzleStore.puzzle.solutionSpaces.numbers.max
-						)}
+						class="var-name"
+						type="text"
+						value={v.name}
+						onchange={(e) => update(v, { name: (e.target as HTMLInputElement).value })}
 					/>
-				</label>
-				<label>
-					Max
-					<input
-						type="number"
-						value={puzzleStore.puzzle.solutionSpaces.numbers.max}
-						min="1"
-						max="9"
-						onchange={(e) => setNumberRange(
-							puzzleStore.puzzle.solutionSpaces.numbers.min,
-							parseInt((e.target as HTMLInputElement).value)
-						)}
-					/>
-				</label>
-			</div>
-		</div>
-	{/if}
-
-	{#if puzzleStore.puzzle.solutionSpaces.numbers.enabled}
-		<label class="checkbox-row">
-			<input
-				type="checkbox"
-				checked={puzzleStore.puzzle.solutionSpaces.modifiers.enabled}
-				onchange={toggleModifiers}
-			/>
-			<span>
-				Secondary Values
-				<span class="space-hint advanced" title="Advanced: a second independent number per cell. When enabled, rules can constrain both the displayed digit and this hidden value separately — used in modifier puzzles where cells carry two distinct numeric attributes.">ⓘ advanced</span>
-			</span>
-		</label>
-		{#if puzzleStore.puzzle.solutionSpaces.modifiers.enabled}
-			<div class="indent">
-				<div class="row">
-					<label>
-						Min
-						<input
-							type="number"
-							value={puzzleStore.puzzle.solutionSpaces.modifiers.min}
-							onchange={(e) => setModifierRange(
-								parseInt((e.target as HTMLInputElement).value),
-								puzzleStore.puzzle.solutionSpaces.modifiers.max
-							)}
-						/>
-					</label>
-					<label>
-						Max
-						<input
-							type="number"
-							value={puzzleStore.puzzle.solutionSpaces.modifiers.max}
-							onchange={(e) => setModifierRange(
-								puzzleStore.puzzle.solutionSpaces.modifiers.min,
-								parseInt((e.target as HTMLInputElement).value)
-							)}
-						/>
-					</label>
+					<button class="icon-btn" title="Move up" onclick={() => puzzleStore.moveVariable(v.id, -1)}>▲</button>
+					<button class="icon-btn" title="Move down" onclick={() => puzzleStore.moveVariable(v.id, 1)}>▼</button>
+					<button class="icon-btn remove" title="Remove variable" onclick={() => removeVariable(v)}>×</button>
 				</div>
-				<p class="hint">Rules can reference both the cell's digit and this value independently.</p>
+
+				<div class="var-body">
+					{#if v.kind === 'number'}
+						<label class="inline">
+							Min
+							<input
+								type="number"
+								value={v.min ?? 1}
+								onchange={(e) => update(v, { min: parseInt((e.target as HTMLInputElement).value) })}
+							/>
+						</label>
+						<label class="inline">
+							Max
+							<input
+								type="number"
+								value={v.max ?? 9}
+								onchange={(e) => update(v, { max: parseInt((e.target as HTMLInputElement).value) })}
+							/>
+						</label>
+					{/if}
+					{#if v.kind === 'line'}
+						<label class="inline">
+							Max per pair
+							<input
+								type="number"
+								min="1"
+								max="9"
+								value={v.maxLinesPerPair ?? 1}
+								onchange={(e) => update(v, { maxLinesPerPair: Math.max(1, parseInt((e.target as HTMLInputElement).value)) })}
+							/>
+						</label>
+					{/if}
+
+					<label class="inline">
+						Render
+						<select
+							value={v.render}
+							onchange={(e) => update(v, { render: (e.target as HTMLSelectElement).value as VariableInstance['render'] })}
+						>
+							{#each renderOptions(v) as opt}
+								<option value={opt.value}>{opt.label}</option>
+							{/each}
+						</select>
+					</label>
+
+					{#if v.render === 'shading' || (v.render === 'lines' && (v.kind === 'border' || v.kind === 'line'))}
+						<div class="inline">
+							<span class="inline-label">Color</span>
+							<button
+								class="color-swatch"
+								title="Pick a color"
+								style="background: {v.color ?? (v.kind === 'boolean' ? '#646464' : '#3b82f6')}"
+								onclick={() => { colorPickerFor = colorPickerFor === v.id ? null : v.id; }}
+								aria-label="Pick color for {v.name}"
+							></button>
+						</div>
+					{/if}
+
+					{#if v.render === 'objects'}
+						<label class="inline emoji-label" title={v.kind === 'number'
+							? `One emoji per value, space-separated (${domainSize(v)} needed, min first)`
+							: 'The emoji shown when this cell is on'}>
+							Emoji
+							<input
+								type="text"
+								class="emoji-input"
+								value={emojiString(v)}
+								placeholder={v.kind === 'number' ? '🐮 🐔 🐑 …' : '⭐'}
+								onchange={(e) => setEmojis(v, (e.target as HTMLInputElement).value)}
+							/>
+						</label>
+					{/if}
+				</div>
+
+				{#if colorPickerFor === v.id}
+					<!-- Inline palette (in normal flow, so it can never render off-screen) -->
+					<div class="palette-row">
+						{#each VAR_COLOR_PALETTE as c}
+							<button
+								class="palette-swatch"
+								class:picked={v.color === c}
+								style="background: {c}"
+								aria-label="Set color {c}"
+								onclick={() => { update(v, { color: c }); colorPickerFor = null; }}
+							></button>
+						{/each}
+						<label class="palette-custom" title="Custom color">
+							<input
+								type="color"
+								value={v.color ?? '#3b82f6'}
+								onchange={(e) => { update(v, { color: (e.target as HTMLInputElement).value }); colorPickerFor = null; }}
+							/>
+							✎
+						</label>
+					</div>
+				{/if}
+
+				<div class="var-footer">
+					<label class="constant-row" title="Constant: the solver may not change this variable. All cells you did not mark as given are fixed to the default value below.">
+						<input
+							type="checkbox"
+							checked={v.constant === true}
+							onchange={() => update(v, { constant: !v.constant })}
+						/>
+						Constant (givens only)
+					</label>
+					{#if v.constant}
+						{#if v.kind === 'number' || v.kind === 'line'}
+							<label class="inline">
+								Default
+								<input
+									type="number"
+									value={typeof v.defaultValue === 'number' ? v.defaultValue : (v.kind === 'line' ? 0 : v.min ?? 1)}
+									onchange={(e) => update(v, { defaultValue: parseInt((e.target as HTMLInputElement).value) })}
+								/>
+							</label>
+						{:else}
+							<label class="inline">
+								Default
+								<select
+									value={v.defaultValue === true ? 'true' : 'false'}
+									onchange={(e) => update(v, { defaultValue: (e.target as HTMLSelectElement).value === 'true' })}
+								>
+									<option value="false">off / unshaded</option>
+									<option value="true">on / shaded</option>
+								</select>
+							</label>
+						{/if}
+					{/if}
+				</div>
 			</div>
+		{/each}
+
+		{#if puzzleStore.puzzle.variables.length === 0}
+			<p class="empty">No variables yet — add at least one to proceed.</p>
 		{/if}
-	{/if}
+	</div>
 
-	<label class="checkbox-row">
-		<input
-			type="checkbox"
-			checked={puzzleStore.puzzle.solutionSpaces.shading.enabled}
-			onchange={toggleShading}
-		/>
-		<span>
-			Shading
-			<span class="space-hint">— each cell is either shaded or unshaded (e.g. Nurikabe, Hitori)</span>
-		</span>
-	</label>
-
-	<label class="checkbox-row">
-		<input
-			type="checkbox"
-			checked={puzzleStore.puzzle.solutionSpaces.borders.enabled}
-			onchange={toggleBorders}
-		/>
-		<span>
-			Borders
-			<span class="space-hint">— edges between cells can be on or off (e.g. Slitherlink)</span>
-		</span>
-	</label>
-
-	<label class="checkbox-row">
-		<input
-			type="checkbox"
-			checked={puzzleStore.puzzle.solutionSpaces.lines.enabled}
-			onchange={toggleLines}
-		/>
-		<span>
-			Lines
-			<span class="space-hint">— edges between cells carry a numeric count (e.g. Hashiwokakero)</span>
-		</span>
-	</label>
-	{#if puzzleStore.puzzle.solutionSpaces.lines.enabled}
-		<div class="indent">
-			<div class="row">
-				<label>
-					Max bridges per pair
-					<input
-						type="number"
-						value={puzzleStore.puzzle.solutionSpaces.lines.maxLinesPerPair}
-						min="1"
-						max="9"
-						onchange={(e) => setMaxLines(parseInt((e.target as HTMLInputElement).value))}
-					/>
-				</label>
-			</div>
-		</div>
-	{/if}
+	<div class="add-row">
+		{#each Object.entries(KIND_INFO) as [kind, info]}
+			<button
+				class="btn add-btn"
+				title={info.hint}
+				onclick={() => puzzleStore.addVariable(kind as VarKind)}
+			>+ {info.label}</button>
+		{/each}
+	</div>
 </div>
 
 <style>
@@ -356,46 +386,189 @@
 		font-size: 13px;
 	}
 
-	/* ── Checkboxes ── */
-	.checkbox-row {
+	/* ── Variable cards ── */
+	.var-list {
 		display: flex;
-		flex-direction: row;
-		align-items: flex-start;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.var-card {
+		border: 1px solid #ddd;
+		border-radius: 6px;
+		padding: 8px;
+		background: #fafafa;
+	}
+
+	.var-header {
+		display: flex;
+		align-items: center;
 		gap: 6px;
-		padding: 5px 0;
+		margin-bottom: 6px;
+	}
+
+	.kind-badge {
+		font-size: 10px;
+		font-weight: 700;
+		padding: 2px 6px;
+		border-radius: 3px;
+		flex-shrink: 0;
+		cursor: help;
+	}
+
+	.kind-number  { background: #e3f2fd; color: #1565c0; }
+	.kind-boolean { background: #efebe9; color: #4e342e; }
+	.kind-border  { background: #e8f5e9; color: #2e7d32; }
+	.kind-line    { background: #fff3e0; color: #e65100; }
+
+	.var-name {
+		flex: 1;
+		min-width: 0;
+		padding: 3px 6px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
 		font-size: 13px;
-		color: #333;
+		font-weight: 500;
+	}
+
+	.icon-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 10px;
+		color: #999;
+		padding: 2px 3px;
+	}
+
+	.icon-btn:hover { color: #333; }
+	.icon-btn.remove { font-size: 15px; }
+	.icon-btn.remove:hover { color: #e53935; }
+
+	.var-body {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: flex-end;
+	}
+
+	.inline {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		font-size: 11px;
+	}
+
+	.inline select {
+		padding: 3px 4px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
+		font-size: 12px;
+	}
+
+	.inline input[type='color'] {
+		width: 40px;
+		height: 26px;
+		padding: 1px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
 		cursor: pointer;
 	}
 
-	.checkbox-row input[type='checkbox'] {
-		margin-top: 2px;
-		flex-shrink: 0;
+	.emoji-input {
+		width: 130px;
+		padding: 4px 6px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
+		font-size: 13px;
 	}
 
-	.space-hint {
-		display: block;
+	.var-footer {
+		display: flex;
+		align-items: flex-end;
+		gap: 10px;
+		margin-top: 6px;
+	}
+
+	.constant-row {
+		flex-direction: row;
+		align-items: center;
+		gap: 5px;
 		font-size: 11px;
-		color: #888;
-		font-weight: 400;
-		margin-top: 1px;
+		color: #666;
+		cursor: pointer;
 	}
 
-	.space-hint.advanced {
-		color: #b07d00;
-		cursor: help;
+	.empty {
+		font-size: 12px;
+		color: #999;
 		font-style: italic;
 	}
 
-	.indent {
-		margin-left: 22px;
-		margin-bottom: 4px;
+	/* ── Add row ── */
+	.add-row {
+		display: flex;
+		gap: 6px;
+		margin-top: 8px;
+		flex-wrap: wrap;
 	}
 
-	.hint {
+	/* ── Color picker ── */
+	.inline-label {
 		font-size: 11px;
-		color: #888;
-		margin: 4px 0 0;
+		color: #666;
+	}
+
+	.color-swatch {
+		width: 34px;
+		height: 24px;
+		border: 1px solid #bbb;
+		border-radius: 4px;
+		cursor: pointer;
+		padding: 0;
+	}
+
+	.palette-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		align-items: center;
+		margin-top: 6px;
+		padding: 6px;
+		background: #f0f0f0;
+		border-radius: 4px;
+	}
+
+	.palette-swatch {
+		width: 22px;
+		height: 22px;
+		border: 1px solid rgba(0, 0, 0, 0.25);
+		border-radius: 4px;
+		cursor: pointer;
+		padding: 0;
+	}
+
+	.palette-swatch.picked {
+		outline: 2px solid #333;
+		outline-offset: 1px;
+	}
+
+	.palette-custom {
+		display: inline-flex;
+		align-items: center;
+		font-size: 13px;
+		color: #555;
+		cursor: pointer;
+		position: relative;
+	}
+
+	.palette-custom input[type='color'] {
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		border: 1px solid #bbb;
+		border-radius: 4px;
+		cursor: pointer;
+		margin-right: 2px;
 	}
 
 	/* ── Buttons ── */
@@ -410,6 +583,17 @@
 
 	.btn:hover {
 		background: #eee;
+	}
+
+	.add-btn {
+		background: #e8f5e9;
+		border-color: #4caf50;
+		color: #2e7d32;
+		flex-shrink: 0;
+	}
+
+	.add-btn:hover {
+		background: #c8e6c9;
 	}
 
 	.presets {

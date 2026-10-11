@@ -1,7 +1,8 @@
-import type { PuzzleState } from '$lib/model/types';
+import type { GeneratorContext, PuzzleState } from '$lib/model/types';
 
-export default function generate(puzzle: PuzzleState): string[] {
+export default function generate(puzzle: PuzzleState, ctx: GeneratorContext): string[] {
 	const { rows, cols } = puzzle.dimensions;
+	const [lh, lv] = ctx.bindings[0].arrays;
 
 	// Collect every cell belonging to a nuri-sg group (S and G cells).
 	// Those cells have degree exactly 1 (enforced by the nuri-sg local predicate)
@@ -21,7 +22,7 @@ export default function generate(puzzle: PuzzleState): string[] {
 		for (let c = 1; c <= cols; c++) {
 			if (!sgCells.has(`${r - 1},${c - 1}`)) {
 				constraints.push(
-					`constraint cell_line_count(${r}, ${c}) = 0 \\/ cell_line_count(${r}, ${c}) = 2;`
+					`constraint cell_line_count(${lh}, ${lv}, ${r}, ${c}) = 0 \\/ cell_line_count(${lh}, ${lv}, ${r}, ${c}) = 2;`
 				);
 			}
 		}

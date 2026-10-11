@@ -7,7 +7,7 @@
 		"numbers"
 	],
 	"requiredSpaces": [
-		"values",
+		"digits",
 		"borders"
 	],
 	"scope": "local",

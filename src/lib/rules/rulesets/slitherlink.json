@@ -1,14 +1,32 @@
 {
-    "id": "slitherlink",
-    "name": "Slitherlink",
-    "description": "Draw a single loop through the grid such that the number in each cell indicates how many of its edges are part of the loop",
-    "categories": [
-        "loop",
-        "pencil"
-    ],
-    "rules": [
-        "edges-degree-0-or-2",
-        "global-number-equals-edges",
-        "edges-used-connected"
-    ]
+	"id": "slitherlink",
+	"name": "Slitherlink",
+	"description": "Draw a single loop through the grid such that the number in each cell indicates how many of its edges are part of the loop",
+	"categories": [
+		"loop",
+		"pencil"
+	],
+	"rules": [
+		"edges-degree-0-or-2",
+		"global-number-equals-edges",
+		"edges-used-connected"
+	],
+	"variables": [
+		{
+			"name": "Loop",
+			"kind": "borders",
+			"render": "lines"
+		},
+		{
+			"name": "Clues",
+			"kind": "digits",
+			"min": 0,
+			"max": 4
+		}
+	],
+	"defaults": {
+		"rows": 9,
+		"cols": 9,
+		"regions": "none"
+	}
 }

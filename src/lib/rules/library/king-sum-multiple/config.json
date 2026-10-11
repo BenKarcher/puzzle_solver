@@ -2,8 +2,14 @@
 	"id": "king-sum-multiple",
 	"name": "King Sum Multiple",
 	"description": "For every cell, the sum of its up to 8 king-neighboring cells must be an integer multiple of that cell's value",
-	"categories": ["arithmetic"],
-	"requiredSpaces": ["values"],
+	"categories": [
+		"arithmetic"
+	],
+	"requiredSpaces": [
+		"digits"
+	],
 	"scope": "global",
-	"imports": ["neighbors"]
+	"imports": [
+		"neighbors"
+	]
 }

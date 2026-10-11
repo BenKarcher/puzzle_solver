@@ -127,6 +127,7 @@ function customToLoaded(def: CustomRuleDefinition): LoadedRule {
 		categories: def.categories?.length ? ['custom', ...def.categories] : ['custom'],
 		requiredSpaces: def.requiredSpaces,
 		scope: def.scope,
+		wholeGrids: def.wholeGrids,
 		groups: def.groups,
 		predicateName: def.predicateName,
 		imports: def.imports,

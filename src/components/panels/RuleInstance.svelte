@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { ui } from '$lib/state/ui.svelte';
-	import type { RuleConfig, RuleInstance } from '$lib/model/types';
+	import { bindableOccurrences, defaultBindings } from '$lib/model/variables';
+	import type { RuleConfig, RuleInstance, VarKind } from '$lib/model/types';
 
 	interface Props {
 		instance: RuleInstance;
@@ -65,6 +66,25 @@
 		puzzleStore.setGroupValue(instance.id, groupIndex, isNaN(num as number) ? null : num);
 	}
 
+	// ── Variable bindings ─────────────────────────────────────────────────────
+
+	const occurrences = $derived(bindableOccurrences(config));
+
+	/** True when any required kind has several instances (binding pickers shown) */
+	const showBindings = $derived(
+		occurrences.some(
+			(kind) => puzzleStore.puzzle.variables.filter((v) => v.kind === kind).length > 1
+		)
+	);
+
+	function varsOfKind(kind: VarKind) {
+		return puzzleStore.puzzle.variables.filter((v) => v.kind === kind);
+	}
+
+	function boundVarId(oi: number): string {
+		return instance.bindings?.[oi] ?? defaultBindings(puzzleStore.puzzle, config)[oi] ?? '';
+	}
+
 	/** Hint text for the currently-active group */
 	const activeGroupHint = $derived.by(() => {
 		const cfg = config.groups?.[ui.selectedGroupIndex];
@@ -79,6 +99,23 @@
 <div class="instance-editor">
 	<h4>{config.name}</h4>
 	<p class="description">{config.description}</p>
+
+	{#if showBindings}
+		<div class="bindings">
+			<span class="bindings-label" title="Which variable each of this rule's requirements applies to">Applies to:</span>
+			{#each occurrences as kind, oi}
+				<select
+					class="binding-select"
+					value={boundVarId(oi)}
+					onchange={(e) => puzzleStore.setInstanceBinding(instance.id, oi, (e.target as HTMLSelectElement).value)}
+				>
+					{#each varsOfKind(kind) as v (v.id)}
+						<option value={v.id}>{v.name}</option>
+					{/each}
+				</select>
+			{/each}
+		</div>
+	{/if}
 
 	<div class="groups">
 		{#each instance.groups as group, gi}
@@ -156,6 +193,32 @@
 		font-size: 11px;
 		color: #888;
 		margin: 0 0 8px;
+	}
+
+	.bindings {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		flex-wrap: wrap;
+		margin-bottom: 8px;
+		padding: 6px 8px;
+		background: #f3e8fd;
+		border: 1px solid #d6bbf5;
+		border-radius: 4px;
+	}
+
+	.bindings-label {
+		font-size: 11px;
+		font-weight: 600;
+		color: #6a1b9a;
+		cursor: help;
+	}
+
+	.binding-select {
+		font-size: 11px;
+		padding: 2px 4px;
+		border: 1px solid #ccc;
+		border-radius: 3px;
 	}
 
 	.groups {

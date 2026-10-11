@@ -9,19 +9,12 @@ import {
 	type Candidate,
 } from './variable-spaces';
 
+export type NumericCandidateGrid = number[][][];
+export type BooleanCandidateGrid = ('true' | 'false' | 'both' | null)[][];
+
 export interface CandidateResult {
-	/** For each cell [row][col], the set of possible digit values */
-	numbers?: number[][][];
-	/** For each cell [row][col], the set of possible arithmetic values (when modifiers enabled) */
-	values?: number[][][];
-	/** For each cell [row][col], true/false/both */
-	shading?: ('true' | 'false' | 'both' | null)[][];
-	/** Border candidates for horizontal/vertical edges */
-	borderH?: ('true' | 'false' | 'both' | null)[][];
-	borderV?: ('true' | 'false' | 'both' | null)[][];
-	/** Line candidates for horizontal/vertical edges */
-	lineH?: number[][][];
-	lineV?: number[][][];
+	/** Per-variable candidate grids, keyed by MZN array name (VariableSpace.solField) */
+	grids: Record<string, NumericCandidateGrid | BooleanCandidateGrid>;
 	/** Total number of solutions seen during candidate computation */
 	solutionCount?: number;
 }

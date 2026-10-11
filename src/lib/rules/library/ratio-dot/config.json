@@ -9,7 +9,7 @@
 		"edge-clue"
 	],
 	"requiredSpaces": [
-		"values"
+		"digits"
 	],
 	"scope": "local",
 	"groups": [

@@ -1,14 +1,26 @@
 {
-    "id": "aqre",
-    "name": "Aqre",
-    "description": "Shade some cells such that no 4 cells in a row are shaded or unshaded, and all the shaded cells are connected. A number in a cage indicates how many of the cells in that cage are shaded.",
-    "categories": [
-        "shading",
-        "pencil"
-    ],
-    "rules": [
-        "shaded-connected",
-        "no-four-in-a-row",
-        "region-shaded-count"
-    ]
+	"id": "aqre",
+	"name": "Aqre",
+	"description": "Shade some cells such that no 4 cells in a row are shaded or unshaded, and all the shaded cells are connected. A number in a cage indicates how many of the cells in that cage are shaded.",
+	"categories": [
+		"shading",
+		"pencil"
+	],
+	"rules": [
+		"shaded-connected",
+		"no-four-in-a-row",
+		"region-shaded-count"
+	],
+	"variables": [
+		{
+			"name": "Shading",
+			"kind": "shading",
+			"render": "shading"
+		}
+	],
+	"defaults": {
+		"rows": 9,
+		"cols": 9,
+		"regions": "none"
+	}
 }

@@ -2,8 +2,15 @@
 	"id": "negative-kropki",
 	"name": "Negative Kropki",
 	"description": "All adjacent pairs that are consecutive or have ratio 2 must be marked. Unmarked pairs satisfy neither condition.",
-	"categories": ["sudoku", "arithmetic", "kropki", "negative"],
-	"requiredSpaces": ["values"],
+	"categories": [
+		"sudoku",
+		"arithmetic",
+		"kropki",
+		"negative"
+	],
+	"requiredSpaces": [
+		"digits"
+	],
 	"scope": "global",
 	"groups": null
 }

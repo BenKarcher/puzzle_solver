@@ -17,10 +17,10 @@ export function drawRegionBoundariesLayer(
 	ctx.lineWidth = BOUNDARY_WIDTH;
 	ctx.lineCap = 'round';
 
-	// Interior horizontal edges: hEdges[r][c] for r = 1..rows-1
+	// Interior horizontal edges: regionEdgesH[r][c] for r = 1..rows-1
 	for (let r = 1; r < rows; r++) {
 		for (let c = 0; c < cols; c++) {
-			if (puzzle.hEdges[r]?.[c]?.border !== true) continue;
+			if (puzzle.regionEdgesH[r]?.[c] !== true) continue;
 			const x1 = offsetX + c * cellSize;
 			const x2 = offsetX + (c + 1) * cellSize;
 			const y  = offsetY + r * cellSize;
@@ -31,10 +31,10 @@ export function drawRegionBoundariesLayer(
 		}
 	}
 
-	// Interior vertical edges: vEdges[r][c] for c = 1..cols-1
+	// Interior vertical edges: regionEdgesV[r][c] for c = 1..cols-1
 	for (let r = 0; r < rows; r++) {
 		for (let c = 1; c < cols; c++) {
-			if (puzzle.vEdges[r]?.[c]?.border !== true) continue;
+			if (puzzle.regionEdgesV[r]?.[c] !== true) continue;
 			const x  = offsetX + c * cellSize;
 			const y1 = offsetY + r * cellSize;
 			const y2 = offsetY + (r + 1) * cellSize;

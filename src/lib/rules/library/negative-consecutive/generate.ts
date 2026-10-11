@@ -1,11 +1,12 @@
-import type { PuzzleState } from '$lib/model/types';
+import type { GeneratorContext, PuzzleState } from '$lib/model/types';
 
 /**
  * Negative constraint for consecutive (white) dots.
  * For every pair of orthogonally adjacent cells that does NOT have a
- * consecutive-pairs instance, emit: constraint abs(digits[r1,c1] - digits[r2,c2]) != 1;
+ * consecutive-pairs instance, emit: constraint abs(${arr}[r1,c1] - ${arr}[r2,c2]) != 1;
  */
-export default function generate(puzzle: PuzzleState): string[] {
+export default function generate(puzzle: PuzzleState, ctx: GeneratorContext): string[] {
+	const [arr] = ctx.bindings[0].arrays;
 	const { rows, cols } = puzzle.dimensions;
 
 	// Collect all cell pairs that have a consecutive-pairs dot
@@ -28,7 +29,7 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r},${c + 1}`;
 			if (!dotted.has(key)) {
 				lines.push(
-					`constraint abs(digits[${r + 1},${c + 1}] - digits[${r + 1},${c + 2}]) != 1;`
+					`constraint abs(${arr}[${r + 1},${c + 1}] - ${arr}[${r + 1},${c + 2}]) != 1;`
 				);
 			}
 		}
@@ -40,7 +41,7 @@ export default function generate(puzzle: PuzzleState): string[] {
 			const key = `${r},${c}-${r + 1},${c}`;
 			if (!dotted.has(key)) {
 				lines.push(
-					`constraint abs(digits[${r + 1},${c + 1}] - digits[${r + 2},${c + 1}]) != 1;`
+					`constraint abs(${arr}[${r + 1},${c + 1}] - ${arr}[${r + 2},${c + 1}]) != 1;`
 				);
 			}
 		}

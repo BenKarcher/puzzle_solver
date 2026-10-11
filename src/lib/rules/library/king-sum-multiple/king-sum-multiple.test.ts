@@ -31,7 +31,6 @@ function buildModel(opts: {
 		`int: rows = ${rows};`,
 		`int: cols = ${cols};`,
 		`array[1..rows, 1..cols] of var ${minDigit}..${maxDigit}: digits;`,
-		`array[1..rows, 1..cols] of var ${minDigit}..${maxDigit}: values = digits;`,
 		'',
 		neighborsMzn,
 		'',
@@ -52,7 +51,7 @@ function buildModel(opts: {
 		lines.push(`constraint digits[${r},${c}] = ${v};`);
 	}
 
-	lines.push('', kingSumConstraint, 'solve satisfy;');
+	lines.push('', kingSumConstraint, 'constraint king_sum_multiple(digits);', 'solve satisfy;');
 	return lines.join('\n');
 }
 

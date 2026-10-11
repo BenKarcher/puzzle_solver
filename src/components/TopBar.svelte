@@ -3,7 +3,7 @@
 	import { ui } from '$lib/state/ui.svelte';
 	import { history } from '$lib/state/history.svelte';
 	import { solverStore } from '$lib/solver/solver.svelte';
-	import type { AppMode, ActiveTool } from '$lib/model/types';
+	import type { AppMode } from '$lib/model/types';
 
 	const modes: { value: AppMode; label: string; tip: string }[] = [
 		{ value: 'grid-setup', label: 'Setup',   tip: 'Configure grid size and what types of values cells can hold' },
@@ -13,21 +13,13 @@
 	];
 
 	function hasAnySolutionSpace(): boolean {
-		const s = puzzleStore.puzzle.solutionSpaces;
-		return s.numbers.enabled || s.shading.enabled || s.borders.enabled || s.lines.enabled;
+		return puzzleStore.puzzle.variables.length > 0;
 	}
 
 	function syncActiveTool(): void {
-		const s = puzzleStore.puzzle.solutionSpaces;
-		const toolToEnabled: Record<ActiveTool, boolean> = {
-			number: s.numbers.enabled,
-			shading: s.shading.enabled,
-			border: s.borders.enabled,
-			line: s.lines.enabled
-		};
-		if (toolToEnabled[ui.activeTool]) return;
-		const first = (Object.keys(toolToEnabled) as ActiveTool[]).find(t => toolToEnabled[t]);
-		if (first) ui.setActiveTool(first);
+		const visible = puzzleStore.puzzle.variables.filter((v) => v.render !== 'invisible');
+		if (visible.some((v) => v.id === ui.activeVarId)) return;
+		ui.setActiveVar(visible[0]?.id ?? null);
 	}
 
 	function switchMode(mode: AppMode) {
@@ -72,7 +64,7 @@
 		if (confirm('Create a new puzzle? Unsaved changes will be lost.')) {
 			solverStore.clear();
 			puzzleStore.newPuzzle(9, 9);
-			ui.setMode('grid-setup');
+			ui.setMode('quickstart');
 		}
 	}
 </script>

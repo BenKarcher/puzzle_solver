@@ -7,7 +7,8 @@
 		handleCanvasMouseMove,
 		handleCanvasMouseUp,
 		handleCanvasContextMenu,
-		handleKeyDown
+		handleKeyDown,
+		applyNumberInput
 	} from '$lib/canvas/interaction';
 	import { puzzleStore } from '$lib/state/puzzle.svelte';
 	import { selection } from '$lib/state/selection.svelte';
@@ -29,27 +30,37 @@
 
 	// ── Keypad state ──────────────────────────────────────────────────────────
 
+	/** The active variable when it's a number kind, else null */
+	const activeNumberVar = $derived.by(() => {
+		if (!ui.activeVarId) return null;
+		const v = puzzleStore.getVariable(ui.activeVarId);
+		return v?.kind === 'number' ? v : null;
+	});
+
 	const showKeypad = $derived(
 		(ui.mode === 'setting' || ui.mode === 'solving') &&
-		ui.activeTool === 'number' &&
-		puzzleStore.puzzle.solutionSpaces.numbers.enabled &&
-		puzzleStore.puzzle.solutionSpaces.numbers.max >= 10
+		activeNumberVar !== null &&
+		(activeNumberVar.max ?? 9) >= 10
 	);
 
 	const keypadN = $derived.by(() => {
-		const { min, max } = puzzleStore.puzzle.solutionSpaces.numbers;
-		const count = max - min + 1;
+		const v = activeNumberVar;
+		if (!v) return 1;
+		const count = (v.max ?? 9) - (v.min ?? 1) + 1;
 		return Math.ceil(Math.sqrt(count));
 	});
 
 	/** Flat list of values to show in keypad, row-major from min */
 	const keypadValues = $derived.by(() => {
-		const { min, max } = puzzleStore.puzzle.solutionSpaces.numbers;
+		const v = activeNumberVar;
+		if (!v) return [];
+		const min = v.min ?? 1;
+		const max = v.max ?? 9;
 		const N = keypadN;
 		const out: (number | null)[] = [];
 		for (let i = 0; i < N * N; i++) {
-			const v = min + i;
-			out.push(v <= max ? v : null);
+			const val = min + i;
+			out.push(val <= max ? val : null);
 		}
 		return out;
 	});
@@ -57,21 +68,13 @@
 	function onKeypadClick(val: number, e: MouseEvent) {
 		const cells = selection.cells;
 		if (cells.length === 0) return;
-		const { min, max } = puzzleStore.puzzle.solutionSpaces.numbers;
-		if (val < min || val > max) return;
-
-		const isGiven = ui.mode === 'setting';
-		const isPencilMark = e.ctrlKey || e.metaKey;
-
-		for (const cell of cells) {
-			const currentCell = puzzleStore.getCell(cell.row, cell.col);
-			if (ui.mode === 'solving' && currentCell.numberIsGiven) continue;
-			if (isPencilMark && ui.mode === 'solving') {
-				puzzleStore.togglePencilMark(cell, val);
-			} else {
-				puzzleStore.setCellNumber(cell, val, isGiven);
-			}
-		}
+		applyNumberInput(
+			activeNumberVar,
+			cells,
+			val,
+			ui.mode === 'setting',
+			e.ctrlKey || e.metaKey
+		);
 	}
 
 	// ── Canvas ────────────────────────────────────────────────────────────────

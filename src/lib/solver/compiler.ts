@@ -1,4 +1,14 @@
-import type { PuzzleState, LoadedRule, RuleConfig, RuleInstance } from '$lib/model/types';
+import type {
+	GeneratorContext,
+	GlobalRuleApplication,
+	LoadedRule,
+	PuzzleState,
+	RuleConfig,
+	RuleInstance,
+	VarKind
+} from '$lib/model/types';
+import { kindOfSpace, mznNamesFor, resolveBindingArrays, type MznNames } from '$lib/model/variables';
+import { buildVariableSpaces, type VariableSpace } from './variable-spaces';
 import { getImportSnippet } from '$lib/rules/registry';
 
 /**
@@ -11,176 +21,63 @@ export interface CompileOptions {
 	valueChoice?: ValueChoice;
 }
 
-export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?: CompileOptions): string {
+/** Symbolic index-set strings per (kind, solField position) matching descriptor dims */
+function dimsFor(sp: VariableSpace, puzzle: PuzzleState): string {
+	const { rows, cols } = puzzle.dimensions;
+	if (sp.numRows === rows && sp.numCols === cols) return '1..rows, 1..cols';
+	if (sp.numRows === rows + 1 && sp.numCols === cols) return '1..rows+1, 1..cols';
+	if (sp.numRows === rows && sp.numCols === cols + 1) return '1..rows, 1..cols+1';
+	if (sp.numRows === rows && sp.numCols === cols - 1) return '1..rows, 1..cols-1';
+	if (sp.numRows === rows - 1 && sp.numCols === cols) return '1..rows-1, 1..cols';
+	return `1..${sp.numRows}, 1..${sp.numCols}`;
+}
+
+function domainFor(sp: VariableSpace, puzzle: PuzzleState): string {
+	const v = puzzle.variables.find((x) => x.id === sp.varId);
+	if (sp.kind === 'number') return `${v?.min ?? 1}..${v?.max ?? 9}`;
+	if (sp.kind === 'line') return `0..${v?.maxLinesPerPair ?? 1}`;
+	return 'bool';
+}
+
+/** Variable declarations, one per instance facet. Constant instances become par literals. */
+function emitDeclarations(puzzle: PuzzleState, spaces: VariableSpace[]): string[] {
 	const lines: string[] = [];
-
-	// 1. Dimensions
-	lines.push(`int: rows = ${puzzle.dimensions.rows};`);
-	lines.push(`int: cols = ${puzzle.dimensions.cols};`);
-	lines.push('');
-
-	// 2. Variable declarations
-	if (puzzle.solutionSpaces.numbers.enabled) {
-		const { min, max } = puzzle.solutionSpaces.numbers;
-		lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: digits;`);
-		if (puzzle.solutionSpaces.modifiers.enabled) {
-			const m = puzzle.solutionSpaces.modifiers;
-			lines.push(`array[1..rows, 1..cols] of var ${m.min}..${m.max}: values;`);
+	for (const sp of spaces) {
+		const dims = dimsFor(sp, puzzle);
+		if (sp.isConstant) {
+			const parType = sp.resultKind === 'boolean' ? 'bool' : 'int';
+			const vals: string[] = [];
+			for (let r = 0; r < sp.numRows; r++)
+				for (let c = 0; c < sp.numCols; c++)
+					vals.push(String(sp.getGiven(r, c)));
+			lines.push(
+				`array[${dims}] of ${parType}: ${sp.solField} = array2d(${dims}, [${vals.join(', ')}]);`
+			);
 		} else {
-			lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: values = digits;`);
+			lines.push(`array[${dims}] of var ${domainFor(sp, puzzle)}: ${sp.solField};`);
 		}
 	}
-
-	if (puzzle.solutionSpaces.shading.enabled) {
-		lines.push('array[1..rows, 1..cols] of var bool: shaded;');
-	}
-
-	if (puzzle.solutionSpaces.borders.enabled) {
-		// Borders include outer boundary edges
-		lines.push('array[1..rows+1, 1..cols] of var bool: border_h;');
-		lines.push('array[1..rows, 1..cols+1] of var bool: border_v;');
-	}
-
-	if (puzzle.solutionSpaces.lines.enabled) {
-		// line_h = horizontal lines (left-right between adjacent cells)
-		// line_v = vertical lines (up-down between adjacent cells)
-		const maxLines = puzzle.solutionSpaces.lines.maxLinesPerPair;
-		lines.push(`array[1..rows, 1..cols-1] of var 0..${maxLines}: line_h;`);
-		lines.push(`array[1..rows-1, 1..cols] of var 0..${maxLines}: line_v;`);
-	}
-
-	if (puzzle.solutionSpaces.borders.enabled || puzzle.solutionSpaces.lines.enabled) {
+	if (puzzle.variables.some((v) => v.kind === 'border' || v.kind === 'line')) {
 		lines.push('int: TOP = 1; int: RIGHT = 2; int: BOTTOM = 3; int: LEFT = 4;');
 	}
+	return lines;
+}
 
-	lines.push('');
-
-	// 3. Collect which rules are actually used (needed to decide whether to emit region data)
-	const usedRuleIds = new Set<string>([
-		...puzzle.globalRules,
-		...puzzle.localRules.map((inst) => inst.ruleId)
-	]);
-
-	// 4. Region / position data — only emitted if some rule requires it
-	if (needsSpace(usedRuleIds, rules, 'regions')) {
-		const regionData = puzzle.cells
-			.map((row) => row.map((c) => c.regionId).join(', '))
-			.join(',\n  ');
-		lines.push(`array[1..rows, 1..cols] of int: region = array2d(1..rows, 1..cols, [\n  ${regionData}\n]);`);
-		lines.push('');
-	}
-
-	if (needsSpace(usedRuleIds, rules, 'positions')) {
-		lines.push(`array[1..rows, 1..cols] of int: position = array2d(1..rows, 1..cols, [\n  ${compilePositions(puzzle)}\n]);`);
-		lines.push('');
-	}
-
-	// 5. Shared imports (deduped, emitted after region data so shared logic can reference `region`)
-	const importLines = collectImports(usedRuleIds, rules);
-	if (importLines.length > 0) {
-		lines.push('% Shared imports');
-		lines.push(...importLines);
-		lines.push('');
-	}
-
-	// 6. Given constraints
-	const givenLines = compileGivens(puzzle);
-	if (givenLines.length > 0) {
-		lines.push('% Givens');
-		lines.push(...givenLines);
-		lines.push('');
-	}
-
-	// 7. Include rule predicate definitions / constraints from .mzn files
-	const includedMzn = new Set<string>();
-	for (const ruleId of usedRuleIds) {
-		const rule = rules.find((r) => r.config.id === ruleId);
-		if (!rule?.mzn) continue;
-
-		// Avoid including the same .mzn content twice
-		if (includedMzn.has(ruleId)) continue;
-		includedMzn.add(ruleId);
-
-		lines.push(`% Rule: ${rule.config.name}`);
-
-		if (rule.config.scope === 'global') {
-			// Global rules: .mzn contains bare constraints, include directly
-			lines.push(rule.mzn);
-		} else {
-			// Local rules: .mzn contains a predicate definition
-			lines.push(rule.mzn);
-		}
-		lines.push('');
-	}
-
-	// 7. Generate constraints from JS generators (global rules)
-	for (const ruleId of puzzle.globalRules) {
-		const rule = rules.find((r) => r.config.id === ruleId);
-		if (!rule?.generate) continue;
-
-		lines.push(`% Generated: ${rule.config.name}`);
-		const constraints = rule.generate(puzzle);
-		lines.push(...constraints);
-		lines.push('');
-	}
-
-	// 8. Generate constraint calls for local rule instances
-	for (const instance of puzzle.localRules) {
-		const rule = rules.find((r) => r.config.id === instance.ruleId);
-		if (!rule) continue;
-
-		if (rule.generate) {
-			lines.push(`% Generated: ${rule.config.name} (instance)`);
-			const constraints = rule.generate(puzzle, instance);
-			lines.push(...constraints);
-		} else if (rule.mzn && rule.config.scope === 'local') {
-			const call = generatePredicateCall(rule.config, instance, puzzle);
-			if (call) {
-				lines.push(call);
+/** Given-value constraints (constant instances are baked into their declaration) */
+function compileGivens(spaces: VariableSpace[]): string[] {
+	const lines: string[] = [];
+	for (const sp of spaces) {
+		if (sp.isConstant) continue;
+		for (let r = 0; r < sp.numRows; r++) {
+			for (let c = 0; c < sp.numCols; c++) {
+				const g = sp.getGiven(r, c);
+				if (g !== undefined) {
+					lines.push(`constraint ${sp.mznExpr(r, c)} = ${g};`);
+				}
 			}
 		}
 	}
-
-	lines.push('');
-
-	if (options?.valueChoice) {
-		const vc = options.valueChoice;
-		const searchAnnotations: string[] = [];
-		if (puzzle.solutionSpaces.numbers.enabled) {
-			searchAnnotations.push(
-				`int_search([digits[i,j] | i in 1..rows, j in 1..cols], first_fail, ${vc})`
-			);
-			if (puzzle.solutionSpaces.modifiers.enabled) {
-				searchAnnotations.push(
-					`int_search([values[i,j] | i in 1..rows, j in 1..cols], first_fail, ${vc})`
-				);
-			}
-		}
-		if (puzzle.solutionSpaces.shading.enabled) {
-			searchAnnotations.push(
-				`bool_search([shaded[i,j] | i in 1..rows, j in 1..cols], input_order, ${vc})`
-			);
-		}
-		if (puzzle.solutionSpaces.borders.enabled) {
-			searchAnnotations.push(
-				`bool_search([border_h[i,j] | i in 1..rows+1, j in 1..cols] ++ [border_v[i,j] | i in 1..rows, j in 1..cols+1], input_order, ${vc})`
-			);
-		}
-		if (puzzle.solutionSpaces.lines.enabled) {
-			searchAnnotations.push(
-				`int_search([line_h[i,j] | i in 1..rows, j in 1..cols-1] ++ [line_v[i,j] | i in 1..rows-1, j in 1..cols], first_fail, ${vc})`
-			);
-		}
-		if (searchAnnotations.length > 0) {
-			lines.push(`solve :: seq_search([${searchAnnotations.join(', ')}]) satisfy;`);
-		} else {
-			lines.push('solve satisfy;');
-		}
-	} else {
-		lines.push('solve satisfy;');
-	}
-
-	return lines.join('\n');
+	return lines;
 }
 
 function collectImports(usedRuleIds: Set<string>, rules: LoadedRule[]): string[] {
@@ -202,336 +99,6 @@ function collectImports(usedRuleIds: Set<string>, rules: LoadedRule[]): string[]
 		}
 	}
 	return out;
-}
-
-function compileGivens(puzzle: PuzzleState): string[] {
-	const lines: string[] = [];
-	const { rows, cols } = puzzle.dimensions;
-
-	for (let r = 0; r < rows; r++) {
-		for (let c = 0; c < cols; c++) {
-			const cell = puzzle.cells[r][c];
-			const mznR = r + 1;
-			const mznC = c + 1;
-
-			if (puzzle.solutionSpaces.numbers.enabled && cell.numberIsGiven && cell.number !== null) {
-				lines.push(`constraint digits[${mznR},${mznC}] = ${cell.number};`);
-			}
-
-			if (puzzle.solutionSpaces.shading.enabled && cell.shadedIsGiven && cell.shaded !== null) {
-				lines.push(`constraint shaded[${mznR},${mznC}] = ${cell.shaded};`);
-			}
-		}
-	}
-
-	// Border edge givens (includes outer boundary)
-	if (puzzle.solutionSpaces.borders.enabled) {
-		for (let r = 0; r <= rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const edge = puzzle.hEdges[r]?.[c];
-				if (edge?.borderIsGiven && edge.border !== null) {
-					lines.push(`constraint border_h[${r + 1},${c + 1}] = ${edge.border};`);
-				}
-			}
-		}
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c <= cols; c++) {
-				const edge = puzzle.vEdges[r]?.[c];
-				if (edge?.borderIsGiven && edge.border !== null) {
-					lines.push(`constraint border_v[${r + 1},${c + 1}] = ${edge.border};`);
-				}
-			}
-		}
-	}
-
-	// Line edge givens (interior only)
-	if (puzzle.solutionSpaces.lines.enabled) {
-		// line_h = horizontal lines on vEdges[r][c] with c=1..cols-1
-		for (let r = 0; r < rows; r++) {
-			for (let c = 1; c < cols; c++) {
-				const edge = puzzle.vEdges[r]?.[c];
-				if (edge?.lineIsGiven && edge.lines !== null) {
-					lines.push(`constraint line_h[${r + 1},${c}] = ${edge.lines};`);
-				}
-			}
-		}
-		// line_v = vertical lines on hEdges[r][c] with r=1..rows-1
-		for (let r = 1; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const edge = puzzle.hEdges[r]?.[c];
-				if (edge?.lineIsGiven && edge.lines !== null) {
-					lines.push(`constraint line_v[${r},${c + 1}] = ${edge.lines};`);
-				}
-			}
-		}
-	}
-
-	return lines;
-}
-
-function generatePredicateCall(
-	config: RuleConfig,
-	instance: RuleInstance,
-	puzzle: PuzzleState
-): string | null {
-	if (!config.groups || instance.groups.length === 0) return null;
-
-	// Convert config.id to valid MiniZinc identifier (or use explicit override)
-	const predicateName = config.predicateName ?? config.id.replace(/-/g, '_');
-
-	const reqSpaces = config.requiredSpaces;
-	const args: string[] = [];
-	for (let gi = 0; gi < instance.groups.length; gi++) {
-		const group = instance.groups[gi];
-		const groupCfg = config.groups[gi];
-		if (!groupCfg) continue;
-		const isCellless = groupCfg.maxSize === 0;
-
-		// Validation: reject call if we can't produce a valid constraint
-		if (groupCfg.hasValue && group.value === null) return null;
-		if (!isCellless && groupCfg.minSize > 0 && group.cells.length < groupCfg.minSize) return null;
-
-		// For cell-less groups: skip cell arrays, only emit value if present.
-		// For normal groups: emit cell arrays per requiredSpaces, then value.
-		if (!isCellless && group.cells.length > 0) {
-			if (reqSpaces.includes('digits')) {
-				const cellRefs = group.cells
-					.map((c) => `digits[${c.row + 1},${c.col + 1}]`)
-					.join(', ');
-				args.push(`[${cellRefs}]`);
-			}
-
-			if (reqSpaces.includes('values')) {
-				const cellRefs = group.cells
-					.map((c) => `values[${c.row + 1},${c.col + 1}]`)
-					.join(', ');
-				args.push(`[${cellRefs}]`);
-			}
-
-			if (reqSpaces.includes('shading')) {
-				const shadingRefs = group.cells
-					.map((c) => `shaded[${c.row + 1},${c.col + 1}]`)
-					.join(', ');
-				args.push(`[${shadingRefs}]`);
-			}
-
-			if (reqSpaces.includes('borders')) {
-				const edgeRefs: string[] = [];
-				for (const cell of group.cells) {
-					const mznR = cell.row + 1;
-					const mznC = cell.col + 1;
-					const top = `border_h[${mznR},${mznC}]`;
-					const bottom = `border_h[${mznR + 1},${mznC}]`;
-					const left = `border_v[${mznR},${mznC}]`;
-					const right = `border_v[${mznR},${mznC + 1}]`;
-					edgeRefs.push(top, right, bottom, left);
-				}
-				const n = group.cells.length;
-				args.push(`array2d(1..${n}, 1..4, [${edgeRefs.join(', ')}])`);
-			}
-
-			if (reqSpaces.includes('lines')) {
-				const { rows, cols } = puzzle.dimensions;
-				const edgeRefs: string[] = [];
-				for (const cell of group.cells) {
-					const r = cell.row;
-					const c = cell.col;
-					// Lines are interior only — boundary cells get constant 0
-					const top = r > 0 ? `line_v[${r},${c + 1}]` : '0';
-					const bottom = r < rows - 1 ? `line_v[${r + 1},${c + 1}]` : '0';
-					const left = c > 0 ? `line_h[${r + 1},${c}]` : '0';
-					const right = c < cols - 1 ? `line_h[${r + 1},${c + 1}]` : '0';
-					edgeRefs.push(top, right, bottom, left);
-				}
-				const n = group.cells.length;
-				args.push(`array2d(1..${n}, 1..4, [${edgeRefs.join(', ')}])`);
-			}
-		}
-
-		if (groupCfg.hasValue) {
-			args.push(`${group.value}`);
-		}
-	}
-
-	if (args.length === 0) return null;
-	return `constraint ${predicateName}(${args.join(', ')});`;
-}
-
-/**
- * Compile a model for checking a user's solution.
- * All cell values are fixed as constraints (treating null shading/borders/lines as false/0).
- * Optionally restrict to only specific rules for per-rule violation checking.
- * If onlyGlobalRules is set, only those global rules are included.
- * If onlyLocalInstances is set, only those local rule instances are included.
- * If neither is set, all rules are included.
- */
-export function compilePuzzleForCheck(
-	puzzle: PuzzleState,
-	rules: LoadedRule[],
-	onlyGlobalRules?: Set<string>,
-	onlyLocalInstances?: Set<string>
-): string {
-	const lines: string[] = [];
-	const { rows, cols } = puzzle.dimensions;
-	const filterRules = onlyGlobalRules !== undefined || onlyLocalInstances !== undefined;
-
-	// 1. Dimensions
-	lines.push(`int: rows = ${rows};`);
-	lines.push(`int: cols = ${cols};`);
-	lines.push('');
-
-	// 2. Variable declarations (same as normal)
-	if (puzzle.solutionSpaces.numbers.enabled) {
-		const { min, max } = puzzle.solutionSpaces.numbers;
-		lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: digits;`);
-		if (puzzle.solutionSpaces.modifiers.enabled) {
-			const m = puzzle.solutionSpaces.modifiers;
-			lines.push(`array[1..rows, 1..cols] of var ${m.min}..${m.max}: values;`);
-		} else {
-			lines.push(`array[1..rows, 1..cols] of var ${min}..${max}: values = digits;`);
-		}
-	}
-	if (puzzle.solutionSpaces.shading.enabled) {
-		lines.push('array[1..rows, 1..cols] of var bool: shaded;');
-	}
-	if (puzzle.solutionSpaces.borders.enabled) {
-		lines.push('array[1..rows+1, 1..cols] of var bool: border_h;');
-		lines.push('array[1..rows, 1..cols+1] of var bool: border_v;');
-	}
-	if (puzzle.solutionSpaces.lines.enabled) {
-		const maxLines = puzzle.solutionSpaces.lines.maxLinesPerPair;
-		lines.push(`array[1..rows, 1..cols-1] of var 0..${maxLines}: line_h;`);
-		lines.push(`array[1..rows-1, 1..cols] of var 0..${maxLines}: line_v;`);
-	}
-	if (puzzle.solutionSpaces.borders.enabled || puzzle.solutionSpaces.lines.enabled) {
-		lines.push('int: TOP = 1; int: RIGHT = 2; int: BOTTOM = 3; int: LEFT = 4;');
-	}
-	lines.push('');
-
-	// Determine which rules to include (needed for region + import collection)
-	const globalRules = filterRules
-		? puzzle.globalRules.filter((id) => onlyGlobalRules?.has(id))
-		: puzzle.globalRules;
-	const localRules = filterRules
-		? puzzle.localRules.filter((inst) => onlyLocalInstances?.has(inst.id))
-		: puzzle.localRules;
-	const usedRuleIds = new Set<string>([
-		...globalRules,
-		...localRules.map((inst) => inst.ruleId)
-	]);
-
-	// 3. Region / position data — only emitted if some rule requires it
-	if (needsSpace(usedRuleIds, rules, 'regions')) {
-		const regionData = puzzle.cells
-			.map((row) => row.map((c) => c.regionId).join(', '))
-			.join(',\n  ');
-		lines.push(`array[1..rows, 1..cols] of int: region = array2d(1..rows, 1..cols, [\n  ${regionData}\n]);`);
-		lines.push('');
-	}
-
-	if (needsSpace(usedRuleIds, rules, 'positions')) {
-		lines.push(`array[1..rows, 1..cols] of int: position = array2d(1..rows, 1..cols, [\n  ${compilePositions(puzzle)}\n]);`);
-		lines.push('');
-	}
-
-	// Shared imports (deduped, emitted after region data so shared logic can reference `region`)
-	const importLines = collectImports(usedRuleIds, rules);
-	if (importLines.length > 0) {
-		lines.push('% Shared imports');
-		lines.push(...importLines);
-		lines.push('');
-	}
-
-	// 4. Fix ALL user values as constraints (not just givens)
-	lines.push('% User solution values');
-	if (puzzle.solutionSpaces.numbers.enabled) {
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const val = puzzle.cells[r][c].number;
-				if (val !== null) {
-					lines.push(`constraint digits[${r + 1},${c + 1}] = ${val};`);
-				}
-			}
-		}
-	}
-	if (puzzle.solutionSpaces.shading.enabled) {
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const val = puzzle.cells[r][c].shaded;
-				lines.push(`constraint shaded[${r + 1},${c + 1}] = ${val ?? false};`);
-			}
-		}
-	}
-	if (puzzle.solutionSpaces.borders.enabled) {
-		for (let r = 0; r <= rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const val = puzzle.hEdges[r]?.[c]?.border;
-				lines.push(`constraint border_h[${r + 1},${c + 1}] = ${val ?? false};`);
-			}
-		}
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c <= cols; c++) {
-				const val = puzzle.vEdges[r]?.[c]?.border;
-				lines.push(`constraint border_v[${r + 1},${c + 1}] = ${val ?? false};`);
-			}
-		}
-	}
-	if (puzzle.solutionSpaces.lines.enabled) {
-		for (let r = 0; r < rows; r++) {
-			for (let c = 1; c < cols; c++) {
-				const val = puzzle.vEdges[r]?.[c]?.lines;
-				lines.push(`constraint line_h[${r + 1},${c}] = ${val ?? 0};`);
-			}
-		}
-		for (let r = 1; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const val = puzzle.hEdges[r]?.[c]?.lines;
-				lines.push(`constraint line_v[${r},${c + 1}] = ${val ?? 0};`);
-			}
-		}
-	}
-	lines.push('');
-
-	// 6. Include rule predicate definitions
-	const includedMzn = new Set<string>();
-	for (const ruleId of usedRuleIds) {
-		const rule = rules.find((r) => r.config.id === ruleId);
-		if (!rule?.mzn) continue;
-		if (includedMzn.has(ruleId)) continue;
-		includedMzn.add(ruleId);
-
-		lines.push(`% Rule: ${rule.config.name}`);
-		lines.push(rule.mzn);
-		lines.push('');
-	}
-
-	// 7. Generate constraints from JS generators (global rules)
-	for (const ruleId of globalRules) {
-		const rule = rules.find((r) => r.config.id === ruleId);
-		if (!rule?.generate) continue;
-		lines.push(`% Generated: ${rule.config.name}`);
-		const constraints = rule.generate(puzzle);
-		lines.push(...constraints);
-		lines.push('');
-	}
-
-	// 8. Generate constraint calls for local rule instances
-	for (const instance of localRules) {
-		const rule = rules.find((r) => r.config.id === instance.ruleId);
-		if (!rule) continue;
-		if (rule.generate) {
-			lines.push(`% Generated: ${rule.config.name} (instance)`);
-			const constraints = rule.generate(puzzle, instance);
-			lines.push(...constraints);
-		} else if (rule.mzn && rule.config.scope === 'local') {
-			const call = generatePredicateCall(rule.config, instance, puzzle);
-			if (call) lines.push(call);
-		}
-	}
-
-	lines.push('');
-	lines.push('solve satisfy;');
-	return lines.join('\n');
 }
 
 function needsSpace(usedRuleIds: Set<string>, rules: LoadedRule[], space: string): boolean {
@@ -556,4 +123,374 @@ function compilePositions(puzzle: PuzzleState): string {
 		}
 	}
 	return positions.map((row) => row.join(', ')).join(',\n  ');
+}
+
+/** Region/position data + shared imports, gated on the used rules */
+function emitSharedData(
+	puzzle: PuzzleState,
+	rules: LoadedRule[],
+	usedRuleIds: Set<string>
+): string[] {
+	const lines: string[] = [];
+	if (needsSpace(usedRuleIds, rules, 'regions')) {
+		const regionData = puzzle.cells
+			.map((row) => row.map((c) => c.regionId).join(', '))
+			.join(',\n  ');
+		lines.push(`array[1..rows, 1..cols] of int: region = array2d(1..rows, 1..cols, [\n  ${regionData}\n]);`);
+		lines.push('');
+	}
+	if (needsSpace(usedRuleIds, rules, 'positions')) {
+		lines.push(`array[1..rows, 1..cols] of int: position = array2d(1..rows, 1..cols, [\n  ${compilePositions(puzzle)}\n]);`);
+		lines.push('');
+	}
+	const importLines = collectImports(usedRuleIds, rules);
+	if (importLines.length > 0) {
+		lines.push('% Shared imports');
+		lines.push(...importLines);
+		lines.push('');
+	}
+	return lines;
+}
+
+/** Include each used rule's .mzn (predicate definitions) once */
+function emitRuleMzn(usedRuleIds: Set<string>, rules: LoadedRule[]): string[] {
+	const lines: string[] = [];
+	const included = new Set<string>();
+	for (const ruleId of usedRuleIds) {
+		const rule = rules.find((r) => r.config.id === ruleId);
+		if (!rule?.mzn) continue;
+		if (included.has(ruleId)) continue;
+		included.add(ruleId);
+		lines.push(`% Rule: ${rule.config.name}`);
+		lines.push(rule.mzn);
+		lines.push('');
+	}
+	return lines;
+}
+
+/** Per-rule uniqueness counter for generator helper identifiers */
+class UniqCounter {
+	private counts = new Map<string, number>();
+	next(ruleId: string): string {
+		const n = (this.counts.get(ruleId) ?? 0) + 1;
+		this.counts.set(ruleId, n);
+		return n === 1 ? '' : `_${n}`;
+	}
+}
+
+/** Emit one global rule application: generator output or a predicate call */
+function emitGlobalApplication(
+	app: GlobalRuleApplication,
+	rule: LoadedRule,
+	puzzle: PuzzleState,
+	names: Map<string, MznNames>,
+	uniq: UniqCounter
+): string[] {
+	const resolved = resolveBindingArrays(puzzle, rule.config, app.bindings, names);
+	if (!resolved) return [`% Skipped ${rule.config.name}: unbound variable requirement`];
+
+	if (rule.generate) {
+		const ctx: GeneratorContext = { bindings: resolved, uniq: uniq.next(rule.config.id) };
+		return [`% Generated: ${rule.config.name}`, ...rule.generate(puzzle, ctx)];
+	}
+
+	if (!rule.mzn) return [];
+	const predicateName = rule.config.predicateName ?? rule.config.id.replace(/-/g, '_');
+	const args = resolved.flatMap((b) => b.arrays);
+	return [`constraint ${predicateName}(${args.join(', ')});`];
+}
+
+/**
+ * Emit the predicate call for a local rule instance.
+ * Argument order: wholeGrids arrays first, then per group:
+ * [coordinates rows, cols]?, one cell-ref array per bindable requiredSpaces
+ * occurrence (declared order), then the group value.
+ */
+function generatePredicateCall(
+	config: RuleConfig,
+	instance: RuleInstance,
+	puzzle: PuzzleState,
+	names: Map<string, MznNames>
+): string | null {
+	if (!config.groups || instance.groups.length === 0) return null;
+
+	const resolved = resolveBindingArrays(puzzle, config, instance.bindings, names);
+	if (!resolved) return null;
+
+	const predicateName = config.predicateName ?? config.id.replace(/-/g, '_');
+	const wholeCount = config.wholeGrids?.length ?? 0;
+	const hasCoordinates = config.requiredSpaces.includes('coordinates');
+	const { rows, cols } = puzzle.dimensions;
+
+	const args: string[] = [];
+
+	// 1. Whole-grid args
+	for (let i = 0; i < wholeCount; i++) {
+		args.push(...resolved[i].arrays);
+	}
+
+	// Bindable requiredSpaces occurrences (offset past wholeGrids in `resolved`)
+	const cellOccurrences: { kind: VarKind; arrays: string[] }[] = [];
+	{
+		let idx = wholeCount;
+		for (const space of config.requiredSpaces) {
+			const kind = kindOfSpace(space);
+			if (!kind) continue;
+			cellOccurrences.push({ kind, arrays: resolved[idx].arrays });
+			idx++;
+		}
+	}
+
+	// 2. Per-group args
+	for (let gi = 0; gi < instance.groups.length; gi++) {
+		const group = instance.groups[gi];
+		const groupCfg = config.groups[gi];
+		if (!groupCfg) continue;
+		const isCellless = groupCfg.maxSize === 0;
+
+		// Validation: reject call if we can't produce a valid constraint
+		if (groupCfg.hasValue && group.value === null) return null;
+		if (!isCellless && groupCfg.minSize > 0 && group.cells.length < groupCfg.minSize) return null;
+
+		if (!isCellless && group.cells.length > 0) {
+			if (hasCoordinates) {
+				args.push(`[${group.cells.map((c) => c.row + 1).join(', ')}]`);
+				args.push(`[${group.cells.map((c) => c.col + 1).join(', ')}]`);
+			}
+
+			for (const occ of cellOccurrences) {
+				const name0 = occ.arrays[0];
+				const name1 = occ.arrays[1];
+				if (occ.kind === 'number' || occ.kind === 'boolean') {
+					const refs = group.cells
+						.map((c) => `${name0}[${c.row + 1},${c.col + 1}]`)
+						.join(', ');
+					args.push(`[${refs}]`);
+				} else if (occ.kind === 'border') {
+					const edgeRefs: string[] = [];
+					for (const cell of group.cells) {
+						const mznR = cell.row + 1;
+						const mznC = cell.col + 1;
+						edgeRefs.push(
+							`${name0}[${mznR},${mznC}]`,      // top
+							`${name1}[${mznR},${mznC + 1}]`,  // right
+							`${name0}[${mznR + 1},${mznC}]`,  // bottom
+							`${name1}[${mznR},${mznC}]`       // left
+						);
+					}
+					args.push(`array2d(1..${group.cells.length}, 1..4, [${edgeRefs.join(', ')}])`);
+				} else {
+					// line kind: interior only — boundary sides get constant 0
+					const edgeRefs: string[] = [];
+					for (const cell of group.cells) {
+						const r = cell.row;
+						const c = cell.col;
+						edgeRefs.push(
+							r > 0 ? `${name1}[${r},${c + 1}]` : '0',
+							c < cols - 1 ? `${name0}[${r + 1},${c + 1}]` : '0',
+							r < rows - 1 ? `${name1}[${r + 1},${c + 1}]` : '0',
+							c > 0 ? `${name0}[${r + 1},${c}]` : '0'
+						);
+					}
+					args.push(`array2d(1..${group.cells.length}, 1..4, [${edgeRefs.join(', ')}])`);
+				}
+			}
+		}
+
+		if (groupCfg.hasValue) {
+			args.push(`${group.value}`);
+		}
+	}
+
+	if (args.length === 0) return null;
+	return `constraint ${predicateName}(${args.join(', ')});`;
+}
+
+/** Emit generator output or predicate call for one local instance */
+function emitLocalInstance(
+	instance: RuleInstance,
+	rule: LoadedRule,
+	puzzle: PuzzleState,
+	names: Map<string, MznNames>,
+	uniq: UniqCounter
+): string[] {
+	if (rule.generate) {
+		const resolved = resolveBindingArrays(puzzle, rule.config, instance.bindings, names);
+		if (!resolved) return [`% Skipped ${rule.config.name}: unbound variable requirement`];
+		const ctx: GeneratorContext = { bindings: resolved, uniq: uniq.next(rule.config.id) };
+		return [`% Generated: ${rule.config.name} (instance)`, ...rule.generate(puzzle, ctx, instance)];
+	}
+	if (rule.mzn && rule.config.scope === 'local') {
+		const call = generatePredicateCall(rule.config, instance, puzzle, names);
+		return call ? [call] : [];
+	}
+	return [];
+}
+
+export function compilePuzzle(puzzle: PuzzleState, rules: LoadedRule[], options?: CompileOptions): string {
+	const lines: string[] = [];
+	const spaces = buildVariableSpaces(puzzle);
+	const names = mznNamesFor(puzzle);
+
+	// 1. Dimensions
+	lines.push(`int: rows = ${puzzle.dimensions.rows};`);
+	lines.push(`int: cols = ${puzzle.dimensions.cols};`);
+	lines.push('');
+
+	// 2. Variable declarations
+	lines.push(...emitDeclarations(puzzle, spaces));
+	lines.push('');
+
+	// 3. Which rules are used (gates region/position data and imports)
+	const usedRuleIds = new Set<string>([
+		...puzzle.globalRules.map((a) => a.ruleId),
+		...puzzle.localRules.map((inst) => inst.ruleId)
+	]);
+
+	// 4. Region/position data + shared imports
+	lines.push(...emitSharedData(puzzle, rules, usedRuleIds));
+
+	// 5. Given constraints
+	const givenLines = compileGivens(spaces);
+	if (givenLines.length > 0) {
+		lines.push('% Givens');
+		lines.push(...givenLines);
+		lines.push('');
+	}
+
+	// 6. Rule predicate definitions
+	lines.push(...emitRuleMzn(usedRuleIds, rules));
+
+	// 7. Global rule applications
+	const uniq = new UniqCounter();
+	for (const app of puzzle.globalRules) {
+		const rule = rules.find((r) => r.config.id === app.ruleId);
+		if (!rule) continue;
+		const out = emitGlobalApplication(app, rule, puzzle, names, uniq);
+		if (out.length > 0) {
+			lines.push(...out);
+			lines.push('');
+		}
+	}
+
+	// 8. Local rule instances
+	for (const instance of puzzle.localRules) {
+		const rule = rules.find((r) => r.config.id === instance.ruleId);
+		if (!rule) continue;
+		lines.push(...emitLocalInstance(instance, rule, puzzle, names, uniq));
+	}
+
+	lines.push('');
+
+	if (options?.valueChoice) {
+		const vc = options.valueChoice;
+		const searchAnnotations: string[] = [];
+		for (const sp of spaces) {
+			if (sp.isConstant) continue;
+			const dims = dimsFor(sp, puzzle);
+			const [d1, d2] = dims.split(', ');
+			const comp = `[${sp.solField}[i,j] | i in ${d1}, j in ${d2}]`;
+			if (sp.resultKind === 'boolean') {
+				searchAnnotations.push(`bool_search(${comp}, input_order, ${vc})`);
+			} else {
+				searchAnnotations.push(`int_search(${comp}, first_fail, ${vc})`);
+			}
+		}
+		if (searchAnnotations.length > 0) {
+			lines.push(`solve :: seq_search([${searchAnnotations.join(', ')}]) satisfy;`);
+		} else {
+			lines.push('solve satisfy;');
+		}
+	} else {
+		lines.push('solve satisfy;');
+	}
+
+	return lines.join('\n');
+}
+
+/**
+ * Compile a model for checking a user's solution.
+ * All user values are fixed as constraints (treating null booleans as false, null lines as 0).
+ * Optionally restrict to specific global applications (by key) and/or local instances (by id)
+ * for per-rule violation checking.
+ */
+export function compilePuzzleForCheck(
+	puzzle: PuzzleState,
+	rules: LoadedRule[],
+	onlyGlobalKeys?: Set<string>,
+	onlyLocalInstances?: Set<string>
+): string {
+	const lines: string[] = [];
+	const spaces = buildVariableSpaces(puzzle);
+	const names = mznNamesFor(puzzle);
+	const filterRules = onlyGlobalKeys !== undefined || onlyLocalInstances !== undefined;
+
+	// 1. Dimensions
+	lines.push(`int: rows = ${puzzle.dimensions.rows};`);
+	lines.push(`int: cols = ${puzzle.dimensions.cols};`);
+	lines.push('');
+
+	// 2. Variable declarations
+	lines.push(...emitDeclarations(puzzle, spaces));
+	lines.push('');
+
+	// Determine which rules to include
+	const globalApps = filterRules
+		? puzzle.globalRules.filter((a) => onlyGlobalKeys?.has(a.key))
+		: puzzle.globalRules;
+	const localRules = filterRules
+		? puzzle.localRules.filter((inst) => onlyLocalInstances?.has(inst.id))
+		: puzzle.localRules;
+	const usedRuleIds = new Set<string>([
+		...globalApps.map((a) => a.ruleId),
+		...localRules.map((inst) => inst.ruleId)
+	]);
+
+	// 3. Region/position data + shared imports
+	lines.push(...emitSharedData(puzzle, rules, usedRuleIds));
+
+	// 4. Fix ALL user values as constraints (not just givens)
+	lines.push('% User solution values');
+	for (const sp of spaces) {
+		if (sp.isConstant) continue;
+		for (let r = 0; r < sp.numRows; r++) {
+			for (let c = 0; c < sp.numCols; c++) {
+				const val = sp.getValue(r, c);
+				if (sp.kind === 'number') {
+					if (val !== null) lines.push(`constraint ${sp.mznExpr(r, c)} = ${val};`);
+				} else if (sp.kind === 'line') {
+					lines.push(`constraint ${sp.mznExpr(r, c)} = ${val ?? 0};`);
+				} else {
+					lines.push(`constraint ${sp.mznExpr(r, c)} = ${val ?? false};`);
+				}
+			}
+		}
+	}
+	lines.push('');
+
+	// 5. Rule predicate definitions
+	lines.push(...emitRuleMzn(usedRuleIds, rules));
+
+	// 6. Global rule applications
+	const uniq = new UniqCounter();
+	for (const app of globalApps) {
+		const rule = rules.find((r) => r.config.id === app.ruleId);
+		if (!rule) continue;
+		const out = emitGlobalApplication(app, rule, puzzle, names, uniq);
+		if (out.length > 0) {
+			lines.push(...out);
+			lines.push('');
+		}
+	}
+
+	// 7. Local rule instances
+	for (const instance of localRules) {
+		const rule = rules.find((r) => r.config.id === instance.ruleId);
+		if (!rule) continue;
+		lines.push(...emitLocalInstance(instance, rule, puzzle, names, uniq));
+	}
+
+	lines.push('');
+	lines.push('solve satisfy;');
+	return lines.join('\n');
 }

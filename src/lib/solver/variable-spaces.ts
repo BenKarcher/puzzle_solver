@@ -1,16 +1,15 @@
-import type { PuzzleState } from '$lib/model/types';
+import type { CellVarState, PuzzleState, VarKind } from '$lib/model/types';
+import { constantDefault, instanceDomain, mznNamesFor } from '$lib/model/variables';
 import type { CandidateResult } from './candidates';
 
-/** Decision variable field names in MiniZinc solution objects */
-export const DECISION_VARS = ['digits', 'values', 'shaded', 'border_h', 'border_v', 'line_h', 'line_v'] as const;
-
 export interface VariableSpace {
-	/** Key prefix for maps, e.g. "grid", "shaded", "border_h" */
-	keyPrefix: string;
-	/** Field name in MiniZinc solution object */
+	/** Owning variable instance id */
+	varId: string;
+	kind: VarKind;
+	/** MZN array name — also the field name in solution objects and CandidateResult.grids */
 	solField: string;
-	/** Field name on CandidateResult */
-	resultField: keyof CandidateResult;
+	/** True when the instance is constant (compiled as a fixed par array) */
+	isConstant: boolean;
 	/** Grid dimensions for this sub-space */
 	numRows: number;
 	numCols: number;
@@ -22,6 +21,8 @@ export interface VariableSpace {
 	mznExpr: (r: number, c: number) => string;
 	/** Returns given value if position is given, or undefined if unknown */
 	getGiven: (r: number, c: number) => number | boolean | undefined;
+	/** Raw user value at position (given or solve entry), or null */
+	getValue: (r: number, c: number) => number | boolean | null;
 	/** Write a solved value to puzzle state at position (r, c) */
 	applyValue: (r: number, c: number, value: number | boolean) => void;
 	/** Write pencil marks to puzzle state at position (r, c) */
@@ -37,198 +38,103 @@ export interface Candidate {
 	key: string;
 }
 
-/** Build the list of VariableSpace descriptors for a puzzle */
+interface FacetSpec {
+	facet: 'cells' | 'h' | 'v';
+	numRows: number;
+	numCols: number;
+	/** Map descriptor grid (r, c) → storage grid position */
+	toStore: (r: number, c: number) => { r: number; c: number };
+}
+
+/**
+ * Facets per kind. Line kinds use the interior-edge ↔ MZN index mapping:
+ *   line_h grid (r, c) → v-storage [r][c+1], MZN line_h[r+1, c+1]
+ *   line_v grid (r, c) → h-storage [r+1][c], MZN line_v[r+1, c+1]
+ */
+function facetsForKind(kind: VarKind, rows: number, cols: number): FacetSpec[] {
+	switch (kind) {
+		case 'number':
+		case 'boolean':
+			return [{ facet: 'cells', numRows: rows, numCols: cols, toStore: (r, c) => ({ r, c }) }];
+		case 'border':
+			return [
+				{ facet: 'h', numRows: rows + 1, numCols: cols, toStore: (r, c) => ({ r, c }) },
+				{ facet: 'v', numRows: rows, numCols: cols + 1, toStore: (r, c) => ({ r, c }) }
+			];
+		case 'line':
+			return [
+				{ facet: 'v', numRows: rows, numCols: cols - 1, toStore: (r, c) => ({ r, c: c + 1 }) },
+				{ facet: 'h', numRows: rows - 1, numCols: cols, toStore: (r: number, c: number) => ({ r: r + 1, c }) }
+			];
+	}
+}
+
+/** MZN base name per facet index for each kind (matches variables.ts KIND_BASE order) */
+function facetSolField(kind: VarKind, arrays: string[], facet: 'cells' | 'h' | 'v'): string {
+	if (kind === 'number' || kind === 'boolean') return arrays[0];
+	if (kind === 'border') return facet === 'h' ? arrays[0] : arrays[1];
+	// line: arrays = [line_h, line_v]; the v-storage facet is line_h (horizontal connections)
+	return facet === 'v' ? arrays[0] : arrays[1];
+}
+
+/** Build the list of VariableSpace descriptors for a puzzle (one per instance facet) */
 export function buildVariableSpaces(puzzle: PuzzleState): VariableSpace[] {
 	const { rows, cols } = puzzle.dimensions;
+	const names = mznNamesFor(puzzle);
 	const spaces: VariableSpace[] = [];
 
-	if (puzzle.solutionSpaces.numbers.enabled) {
-		const { min, max } = puzzle.solutionSpaces.numbers;
-		const domain: number[] = [];
-		for (let v = min; v <= max; v++) domain.push(v);
-		spaces.push({
-			keyPrefix: 'digits',
-			solField: 'digits',
-			resultField: 'numbers',
-			numRows: rows,
-			numCols: cols,
-			domain,
-			resultKind: 'numeric',
-			mznExpr: (r, c) => `digits[${r + 1},${c + 1}]`,
-			getGiven: (r, c) => {
-				const cell = puzzle.cells[r][c];
-				return cell.numberIsGiven && cell.number !== null ? cell.number : undefined;
-			},
-			applyValue: (r, c, value) => {
-				const cell = puzzle.cells[r][c];
-				if (!cell.numberIsGiven) cell.number = value as number;
-			},
-			applyMarks: (r, c, marks) => {
-				const cell = puzzle.cells[r][c];
-				if (!cell.numberIsGiven) cell.pencilMarks = [...marks] as number[];
-			},
-			clearValue: (r, c) => {
-				const cell = puzzle.cells[r][c];
-				if (!cell.numberIsGiven) { cell.number = null; cell.pencilMarks = []; }
-			},
-		});
+	for (const v of puzzle.variables) {
+		const arrays = names.get(v.id)?.arrays ?? [];
+		const domain = instanceDomain(v);
+		const resultKind: 'numeric' | 'boolean' =
+			v.kind === 'boolean' || v.kind === 'border' ? 'boolean' : 'numeric';
+		const isConstant = v.constant === true;
+		const cDefault = constantDefault(v);
+		const grid = puzzle.varData[v.id];
 
-		if (puzzle.solutionSpaces.modifiers.enabled) {
-			const m = puzzle.solutionSpaces.modifiers;
-			const valueDomain: number[] = [];
-			for (let v = m.min; v <= m.max; v++) valueDomain.push(v);
+		for (const spec of facetsForKind(v.kind, rows, cols)) {
+			const solField = facetSolField(v.kind, arrays, spec.facet);
+			const store = (): CellVarState[][] | undefined => grid?.[spec.facet];
+			const at = (r: number, c: number): CellVarState | undefined => {
+				const p = spec.toStore(r, c);
+				return store()?.[p.r]?.[p.c];
+			};
+
 			spaces.push({
-				keyPrefix: 'values',
-				solField: 'values',
-				resultField: 'values',
-				numRows: rows,
-				numCols: cols,
-				domain: valueDomain,
-				resultKind: 'numeric',
-				mznExpr: (r, c) => `values[${r + 1},${c + 1}]`,
-				getGiven: () => undefined,
-				applyValue: () => {},
-				applyMarks: () => {},
-				clearValue: () => {},
+				varId: v.id,
+				kind: v.kind,
+				solField,
+				isConstant,
+				numRows: spec.numRows,
+				numCols: spec.numCols,
+				domain,
+				resultKind,
+				mznExpr: (r, c) => `${solField}[${r + 1},${c + 1}]`,
+				getGiven: (r, c) => {
+					const s = at(r, c);
+					if (s?.isGiven && s.value !== null) return s.value;
+					// Constant instances: every position is effectively known
+					if (isConstant) return cDefault;
+					return undefined;
+				},
+				getValue: (r, c) => at(r, c)?.value ?? null,
+				applyValue: (r, c, value) => {
+					const s = at(r, c);
+					if (s && !s.isGiven) s.value = value;
+				},
+				applyMarks: (r, c, marks) => {
+					const s = at(r, c);
+					if (s && !s.isGiven) s.marks = [...marks] as number[];
+				},
+				clearValue: (r, c) => {
+					const s = at(r, c);
+					if (s && !s.isGiven) {
+						s.value = null;
+						s.marks = [];
+					}
+				}
 			});
 		}
-	}
-
-	if (puzzle.solutionSpaces.shading.enabled) {
-		spaces.push({
-			keyPrefix: 'shaded',
-			solField: 'shaded',
-			resultField: 'shading',
-			numRows: rows,
-			numCols: cols,
-			domain: [true, false],
-			resultKind: 'boolean',
-			mznExpr: (r, c) => `shaded[${r + 1},${c + 1}]`,
-			getGiven: (r, c) => {
-				const cell = puzzle.cells[r][c];
-				return cell.shadedIsGiven && cell.shaded !== null ? cell.shaded : undefined;
-			},
-			applyValue: (r, c, value) => {
-				const cell = puzzle.cells[r][c];
-				if (!cell.shadedIsGiven) cell.shaded = value as boolean;
-			},
-			applyMarks: () => {},
-			clearValue: (r, c) => {
-				const cell = puzzle.cells[r][c];
-				if (!cell.shadedIsGiven) cell.shaded = null;
-			},
-		});
-	}
-
-	if (puzzle.solutionSpaces.borders.enabled) {
-		spaces.push({
-			keyPrefix: 'border_h',
-			solField: 'border_h',
-			resultField: 'borderH',
-			numRows: rows + 1,
-			numCols: cols,
-			domain: [true, false],
-			resultKind: 'boolean',
-			mznExpr: (r, c) => `border_h[${r + 1},${c + 1}]`,
-			getGiven: (r, c) => {
-				const edge = puzzle.hEdges[r]?.[c];
-				return edge?.borderIsGiven && edge.border !== null ? edge.border : undefined;
-			},
-			applyValue: (r, c, value) => {
-				const edge = puzzle.hEdges[r]?.[c];
-				if (edge && !edge.borderIsGiven) edge.border = value as boolean;
-			},
-			applyMarks: () => {},
-			clearValue: (r, c) => {
-				const edge = puzzle.hEdges[r]?.[c];
-				if (edge && !edge.borderIsGiven) edge.border = null;
-			},
-		});
-		spaces.push({
-			keyPrefix: 'border_v',
-			solField: 'border_v',
-			resultField: 'borderV',
-			numRows: rows,
-			numCols: cols + 1,
-			domain: [true, false],
-			resultKind: 'boolean',
-			mznExpr: (r, c) => `border_v[${r + 1},${c + 1}]`,
-			getGiven: (r, c) => {
-				const edge = puzzle.vEdges[r]?.[c];
-				return edge?.borderIsGiven && edge.border !== null ? edge.border : undefined;
-			},
-			applyValue: (r, c, value) => {
-				const edge = puzzle.vEdges[r]?.[c];
-				if (edge && !edge.borderIsGiven) edge.border = value as boolean;
-			},
-			applyMarks: () => {},
-			clearValue: (r, c) => {
-				const edge = puzzle.vEdges[r]?.[c];
-				if (edge && !edge.borderIsGiven) edge.border = null;
-			},
-		});
-	}
-
-	if (puzzle.solutionSpaces.lines.enabled) {
-		const maxL = puzzle.solutionSpaces.lines.maxLinesPerPair;
-		const domain: number[] = [];
-		for (let v = 0; v <= maxL; v++) domain.push(v);
-
-		// line_h: grid (r, c) → vEdges[r][c+1], MZN line_h[r+1, c+1]
-		spaces.push({
-			keyPrefix: 'line_h',
-			solField: 'line_h',
-			resultField: 'lineH',
-			numRows: rows,
-			numCols: cols - 1,
-			domain,
-			resultKind: 'numeric',
-			mznExpr: (r, c) => `line_h[${r + 1},${c + 1}]`,
-			getGiven: (r, c) => {
-				const edge = puzzle.vEdges[r]?.[c + 1];
-				return edge?.lineIsGiven && edge.lines !== null ? edge.lines : undefined;
-			},
-			applyValue: (r, c, value) => {
-				const edge = puzzle.vEdges[r]?.[c + 1];
-				if (edge && !edge.lineIsGiven) edge.lines = value as number;
-			},
-			applyMarks: (r, c, marks) => {
-				const edge = puzzle.vEdges[r]?.[c + 1];
-				if (edge && !edge.lineIsGiven) edge.linePencilMarks = [...marks] as number[];
-			},
-			clearValue: (r, c) => {
-				const edge = puzzle.vEdges[r]?.[c + 1];
-				if (edge && !edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
-			},
-		});
-
-		// line_v: grid (r, c) → hEdges[r+1][c], MZN line_v[r+1, c+1]
-		spaces.push({
-			keyPrefix: 'line_v',
-			solField: 'line_v',
-			resultField: 'lineV',
-			numRows: rows - 1,
-			numCols: cols,
-			domain,
-			resultKind: 'numeric',
-			mznExpr: (r, c) => `line_v[${r + 1},${c + 1}]`,
-			getGiven: (r, c) => {
-				const edge = puzzle.hEdges[r + 1]?.[c];
-				return edge?.lineIsGiven && edge.lines !== null ? edge.lines : undefined;
-			},
-			applyValue: (r, c, value) => {
-				const edge = puzzle.hEdges[r + 1]?.[c];
-				if (edge && !edge.lineIsGiven) edge.lines = value as number;
-			},
-			applyMarks: (r, c, marks) => {
-				const edge = puzzle.hEdges[r + 1]?.[c];
-				if (edge && !edge.lineIsGiven) edge.linePencilMarks = [...marks] as number[];
-			},
-			clearValue: (r, c) => {
-				const edge = puzzle.hEdges[r + 1]?.[c];
-				if (edge && !edge.lineIsGiven) { edge.lines = null; edge.linePencilMarks = []; }
-			},
-		});
 	}
 
 	return spaces;
@@ -247,7 +153,7 @@ export function initUnknowns(spaces: VariableSpace[]): {
 	for (const sp of spaces) {
 		for (let r = 0; r < sp.numRows; r++) {
 			for (let c = 0; c < sp.numCols; c++) {
-				const key = `${sp.keyPrefix}:${r}:${c}`;
+				const key = `${sp.solField}:${r}:${c}`;
 				const given = sp.getGiven(r, c);
 				if (given !== undefined) {
 					possibles.set(key, new Set([given]));
@@ -275,7 +181,7 @@ export function harvestSolution(
 		if (!data) continue;
 		for (let r = 0; r < Math.min(sp.numRows, data.length); r++) {
 			for (let c = 0; c < Math.min(sp.numCols, data[r]?.length ?? 0); c++) {
-				possibles.get(`${sp.keyPrefix}:${r}:${c}`)?.add(data[r][c]);
+				possibles.get(`${sp.solField}:${r}:${c}`)?.add(data[r][c]);
 			}
 		}
 	}
@@ -286,22 +192,22 @@ export function buildCandidateResult(
 	spaces: VariableSpace[],
 	possibles: Map<string, Set<number | boolean>>,
 ): CandidateResult {
-	const result: CandidateResult = {};
+	const result: CandidateResult = { grids: {} };
 
 	for (const sp of spaces) {
 		if (sp.resultKind === 'numeric') {
-			(result as Record<string, unknown>)[sp.resultField] = Array.from(
+			result.grids[sp.solField] = Array.from(
 				{ length: sp.numRows },
 				(_, r) => Array.from({ length: sp.numCols }, (_, c) => {
-					const vals = possibles.get(`${sp.keyPrefix}:${r}:${c}`);
-					return vals ? ([...vals].sort() as number[]) : [];
+					const vals = possibles.get(`${sp.solField}:${r}:${c}`);
+					return vals ? ([...vals].sort((a, b) => (a as number) - (b as number)) as number[]) : [];
 				})
 			);
 		} else {
-			(result as Record<string, unknown>)[sp.resultField] = Array.from(
+			result.grids[sp.solField] = Array.from(
 				{ length: sp.numRows },
 				(_, r) => Array.from({ length: sp.numCols }, (_, c) => {
-					const vals = possibles.get(`${sp.keyPrefix}:${r}:${c}`);
+					const vals = possibles.get(`${sp.solField}:${r}:${c}`);
 					if (!vals) return null;
 					const hasTrue = vals.has(true);
 					const hasFalse = vals.has(false);
@@ -318,9 +224,9 @@ export function buildCandidateResult(
 }
 
 /** Build a deduplication key from only the decision variables of a solution */
-export function solutionKey(sol: Record<string, unknown>): string {
+export function solutionKey(sol: Record<string, unknown>, fields: string[]): string {
 	const parts: string[] = [];
-	for (const k of DECISION_VARS) {
+	for (const k of fields) {
 		if (k in sol) parts.push(JSON.stringify(sol[k]));
 	}
 	return parts.join('|');
