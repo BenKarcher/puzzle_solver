@@ -1,0 +1,13 @@
+diff --git a/solvers/chuffed/chuffed_solverinstance.cpp b/solvers/chuffed/chuffed_solverinstance.cpp
+index 1c6b3ed8..2b95891a 100644
+--- a/solvers/chuffed/chuffed_solverinstance.cpp
++++ b/solvers/chuffed/chuffed_solverinstance.cpp
+@@ -666,6 +666,8 @@ bool ChuffedSolverFactory::processOption(SolverInstanceBase::Options* opt, int&
+     so.ldsbad = true;
+   } else if (cop.get("--sbps")) {
+     so.sbps = true;
++  } else if (cop.get("--true-candidates")) {
++    so.true_candidates = true;
+   } else {
+     return false;
+   }

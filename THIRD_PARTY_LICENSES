@@ -2,7 +2,7 @@ This project includes compiled builds of the following third-party software
 in the static/minizinc.wasm and static/minizinc.data files:
 
 ================================================================================
-Chuffed (modified fork with true-candidates support)
+Chuffed (modified fork with true-candidates support and connected propagator fixes)
 https://github.com/BenKarcher/chuffed (fork of https://github.com/chuffed/chuffed)
 License: MIT
 ================================================================================
@@ -30,7 +30,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-libminizinc
+libminizinc 2.10.1 (modified: solver-build/patches/libminizinc-true-candidates.patch)
 https://github.com/MiniZinc/libminizinc
 License: MPL 2.0
 ================================================================================
