@@ -18,7 +18,7 @@ MZN_INSTALL="$BUILD_DIR/mzn-install"
 
 # Fork of Chuffed with true-candidates support.
 # To use your own fork, change this URL.
-CHUFFED_REPO="https://github.com/ben-karcher/chuffed.git"
+CHUFFED_REPO="https://github.com/BenKarcher/chuffed.git"
 LIBMINIZINC_REPO="https://github.com/MiniZinc/libminizinc.git"
 MINIZINC_JS_REPO="https://github.com/MiniZinc/minizinc-js.git"
 

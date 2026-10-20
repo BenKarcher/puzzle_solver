@@ -3,7 +3,7 @@ in the static/minizinc.wasm and static/minizinc.data files:
 
 ================================================================================
 Chuffed (modified fork with true-candidates support)
-https://github.com/chuffed/chuffed
+https://github.com/BenKarcher/chuffed (fork of https://github.com/chuffed/chuffed)
 License: MIT
 ================================================================================
 
